@@ -185,38 +185,41 @@ const Chat: React.FC = () => {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
       width: '100vw',
       background: 'linear-gradient(135deg, #16a085 0%, #2c8d6f 50%, #34495e 100%)',
-      padding: isMobile ? '10px' : '20px',
+      padding: '0',
       margin: '0',
       boxSizing: 'border-box',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       position: 'fixed',
       top: '0',
       left: '0',
-      overflow: 'auto'
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <div style={{
-        maxWidth: isMobile ? '100%' : '1400px',
-        margin: '0 auto',
-        borderRadius: isMobile ? '16px' : '24px',
+        width: '100%',
+        height: '100%',
+        borderRadius: '0',
         overflow: 'hidden',
-        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
         backgroundColor: '#ffffff',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        height: isMobile ? 'calc(100vh - 20px)' : 'auto'
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* Header */}
         <div style={{
           background: 'linear-gradient(135deg, #16a085 0%, #138d75 50%, #117864 100%)',
           color: '#ffffff',
-          padding: isMobile ? '16px 20px' : '24px 32px',
+          padding: isMobile ? '12px 16px' : '16px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 4px 20px rgba(22, 160, 133, 0.3)'
+          boxShadow: '0 4px 20px rgba(22, 160, 133, 0.3)',
+          flexShrink: 0,
+          minHeight: isMobile ? '60px' : '70px',
+          zIndex: 10
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px' }}>
             <div style={{
@@ -371,61 +374,79 @@ const Chat: React.FC = () => {
         {/* Main Content */}
         <div style={{ 
           display: 'flex', 
-          minHeight: isMobile ? 'calc(100vh - 180px)' : '600px',
-          flexDirection: isMobile ? 'column' : 'row'
+          height: 'calc(100vh - 70px)',
+          flexDirection: isMobile ? 'column' : 'row',
+          flex: 1,
+          overflow: 'hidden'
         }}>
           {/* Sidebar */}
           <div style={{
             width: isMobile ? '100%' : '280px',
             background: 'linear-gradient(180deg, #2c3e50 0%, #34495e 100%)',
-            padding: isMobile ? '16px' : '24px',
+            padding: isMobile ? '12px' : '20px',
             borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
             borderBottom: isMobile ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-            minHeight: isMobile ? 'auto' : '600px',
+            height: isMobile ? 'auto' : '100%',
             maxHeight: isMobile ? '200px' : 'none',
-            overflowY: isMobile ? 'auto' : 'visible'
+            overflowY: 'auto',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
           }}>
             <button
               onClick={() => handleNewChat()}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                background: 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)',
                 color: '#ffffff',
-                border: 'none',
                 borderRadius: '12px',
-                padding: isMobile ? '10px' : '14px 0',
+                padding: isMobile ? '12px' : '16px',
                 fontWeight: '600',
-                marginBottom: isMobile ? '16px' : '24px',
+                marginBottom: isMobile ? '16px' : '20px',
+                marginTop: isMobile ? '24px' : '28px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '8px',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                fontSize: isMobile ? '13px' : '14px',
+                fontSize: isMobile ? '14px' : '16px',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(22, 160, 133, 0.3)'
+                boxShadow: '0 6px 20px rgba(26, 188, 156, 0.4)',
+                flexShrink: 0,
+                minHeight: isMobile ? '48px' : '52px',
+                position: 'relative',
+                zIndex: 1,
+                border: '2px solid rgba(255, 255, 255, 0.2)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #1dd1a1 0%, #1abc9c 100%)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(26, 188, 156, 0.5)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #16a085 0%, #138d75 100%)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
                 e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(26, 188, 156, 0.4)';
               }}
             >
               <Plus size={16} />
               Nuevo Chat
             </button>
             
-            <div style={{ maxHeight: isMobile ? '120px' : 'none', overflowY: 'auto' }}>
+            <div style={{ 
+              flex: 1,
+              overflowY: 'auto',
+              maxHeight: isMobile ? 'calc(200px - 140px)' : 'calc(100vh - 260px)',
+              paddingTop: '0'
+            }}>
               {chats.map((chat) => (
                 <div
                   key={chat.id}
                   style={{
-                    padding: isMobile ? '12px' : '16px',
-                    borderRadius: '12px',
-                    marginBottom: '8px',
+                    padding: isMobile ? '12px' : '16px 20px',
+                    borderRadius: '10px',
+                    marginBottom: isMobile ? '8px' : '12px',
                     background: currentChatId === chat.id 
                       ? 'linear-gradient(135deg, rgba(22, 160, 133, 0.2) 0%, rgba(19, 141, 117, 0.1) 100%)'
                       : 'transparent',
@@ -433,7 +454,11 @@ const Chat: React.FC = () => {
                     fontWeight: currentChatId === chat.id ? '600' : '500',
                     color: currentChatId === chat.id ? '#16a085' : '#bdc3c7',
                     transition: 'all 0.3s ease',
-                    border: currentChatId === chat.id ? '1px solid rgba(22, 160, 133, 0.3)' : '1px solid transparent'
+                    border: currentChatId === chat.id ? '1px solid rgba(22, 160, 133, 0.3)' : '1px solid transparent',
+                    minHeight: isMobile ? '50px' : '60px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
                   }}
                   onClick={() => loadChat(chat.id)}
                   onMouseEnter={(e) => {
@@ -453,14 +478,17 @@ const Chat: React.FC = () => {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: isMobile ? '13px' : '15px'
+                    fontSize: isMobile ? '13px' : '15px',
+                    lineHeight: '1.4',
+                    marginBottom: '4px'
                   }}>
                     {chat.titulo}
                   </div>
                   <div style={{
-                    fontSize: '11px',
+                    fontSize: isMobile ? '11px' : '13px',
                     opacity: 0.7,
-                    marginTop: '4px'
+                    marginTop: '2px',
+                    lineHeight: '1.3'
                   }}>
                     {new Date(chat.fecha_actualizacion || chat.fecha_creacion || '').toLocaleDateString()}
                   </div>
@@ -474,48 +502,52 @@ const Chat: React.FC = () => {
             flex: 1, 
             display: 'flex', 
             flexDirection: 'column',
-            minHeight: isMobile ? 'calc(100vh - 380px)' : 'auto'
+            height: '100%',
+            overflow: 'hidden',
+            position: 'relative'
           }}>
             {/* Messages Area */}
             <div style={{
               flex: 1,
-              padding: isMobile ? '16px' : '32px',
+              padding: isMobile ? '8px 12px' : '16px 20px',
+              paddingBottom: isMobile ? '80px' : '100px',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px',
+              gap: isMobile ? '12px' : '16px',
               background: 'linear-gradient(180deg, #f8fdfa 0%, #ecf9f5 100%)',
-              minHeight: isMobile ? '300px' : '400px'
+              minHeight: 0
             }}>
               {messages.length === 0 && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '16px',
-                  animation: 'slideIn 0.3s ease-out'
+                  gap: isMobile ? '12px' : '16px',
+                  animation: 'slideIn 0.3s ease-out',
+                  marginBottom: '8px'
                 }}>
                   <div style={{
                     background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
                     borderRadius: '50%',
-                    width: '42px',
-                    height: '42px',
+                    width: isMobile ? '40px' : '44px',
+                    height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 4px 15px rgba(22, 160, 133, 0.4)',
                     flexShrink: 0
                   }}>
-                    <Bot color="#ffffff" size={22} />
+                    <Bot color="#ffffff" size={isMobile ? 20 : 24} />
                   </div>
                   <div style={{
                     background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
                     borderRadius: '16px',
-                    padding: '16px 20px',
+                    padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                    maxWidth: '70%',
+                    maxWidth: isMobile ? '80%' : '75%',
                     border: '1px solid rgba(22, 160, 133, 0.1)',
-                    fontSize: '15px',
-                    lineHeight: '1.5',
+                    fontSize: isMobile ? '14px' : '15px',
+                    lineHeight: '1.6',
                     color: '#2c3e50'
                   }}>
                     ¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?
@@ -527,16 +559,17 @@ const Chat: React.FC = () => {
                 <div key={msg.id} style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '16px',
-                  animation: 'slideIn 0.3s ease-out'
+                  gap: isMobile ? '12px' : '16px',
+                  animation: 'slideIn 0.3s ease-out',
+                  marginBottom: '8px'
                 }}>
                   <div style={{
                     background: msg.rol === 'usuario' 
                       ? 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
                       : 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
                     borderRadius: '50%',
-                    width: '42px',
-                    height: '42px',
+                    width: isMobile ? '40px' : '44px',
+                    height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -547,8 +580,8 @@ const Chat: React.FC = () => {
                     flexShrink: 0
                   }}>
                     {msg.rol === 'usuario' ? 
-                      <User color="#16a085" size={22} /> : 
-                      <Bot color="#ffffff" size={22} />
+                      <User color="#16a085" size={isMobile ? 20 : 24} /> : 
+                      <Bot color="#ffffff" size={isMobile ? 20 : 24} />
                     }
                   </div>
                   <div style={{
@@ -556,12 +589,12 @@ const Chat: React.FC = () => {
                       ? 'linear-gradient(135deg, #e8f8f5 0%, #d5f4e6 100%)'
                       : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
                     borderRadius: '16px',
-                    padding: '16px 20px',
+                    padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                    maxWidth: isMobile ? '85%' : '70%',
+                    maxWidth: isMobile ? '80%' : '75%',
                     border: '1px solid rgba(22, 160, 133, 0.1)',
-                    fontSize: '15px',
-                    lineHeight: '1.5',
+                    fontSize: isMobile ? '14px' : '15px',
+                    lineHeight: '1.6',
                     wordBreak: 'break-word',
                     color: '#2c3e50'
                   }}>
@@ -574,39 +607,40 @@ const Chat: React.FC = () => {
                 <div style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '16px'
+                  gap: isMobile ? '12px' : '16px',
+                  marginBottom: '8px'
                 }}>
                   <div style={{
                     background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
                     borderRadius: '50%',
-                    width: '42px',
-                    height: '42px',
+                    width: isMobile ? '40px' : '44px',
+                    height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 4px 15px rgba(22, 160, 133, 0.4)',
                     flexShrink: 0
                   }}>
-                    <Bot color="#ffffff" size={22} />
+                    <Bot color="#ffffff" size={isMobile ? 20 : 24} />
                   </div>
                   <div style={{
                     background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
                     borderRadius: '16px',
-                    padding: '16px 20px',
+                    padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
                     border: '1px solid rgba(22, 160, 133, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    <span style={{ color: '#7f8c8d', fontSize: '14px' }}>Escribiendo</span>
+                    <span style={{ color: '#7f8c8d', fontSize: isMobile ? '12px' : '14px' }}>Escribiendo</span>
                     <div style={{ display: 'flex', gap: '2px' }}>
                       {[0, 1, 2].map((i) => (
                         <div
                           key={i}
                           style={{
-                            width: '6px',
-                            height: '6px',
+                            width: isMobile ? '4px' : '6px',
+                            height: isMobile ? '4px' : '6px',
                             borderRadius: '50%',
                             background: '#16a085',
                             animation: 'bounce 1.4s infinite ease-in-out both',
@@ -624,14 +658,18 @@ const Chat: React.FC = () => {
             
             {/* Input Area */}
             <div style={{
-              padding: isMobile ? '16px 20px' : '24px 32px',
+              padding: isMobile ? '8px 12px 12px' : '12px 20px 16px',
               borderTop: '1px solid rgba(22, 160, 133, 0.1)',
               background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              backdropFilter: 'blur(20px)'
+              backdropFilter: 'blur(20px)',
+              flexShrink: 0,
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 10
             }}>
               <div style={{
                 display: 'flex',
-                gap: '16px',
+                gap: isMobile ? '8px' : '12px',
                 alignItems: 'flex-end'
               }}>
                 <textarea
@@ -644,10 +682,10 @@ const Chat: React.FC = () => {
                     resize: 'none',
                     borderRadius: '16px',
                     border: '2px solid #e8f8f5',
-                    padding: '16px 20px',
-                    fontSize: '15px',
-                    minHeight: '52px',
-                    maxHeight: '120px',
+                    padding: isMobile ? '12px 16px' : '16px 20px',
+                    fontSize: isMobile ? '14px' : '15px',
+                    minHeight: isMobile ? '44px' : '52px',
+                    maxHeight: isMobile ? '88px' : '120px',
                     outline: 'none',
                     transition: 'all 0.3s ease',
                     background: '#ffffff',
@@ -681,9 +719,9 @@ const Chat: React.FC = () => {
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '16px',
-                    padding: '16px 20px',
+                    padding: isMobile ? '12px 16px' : '16px 20px',
                     fontWeight: '600',
-                    fontSize: '16px',
+                    fontSize: isMobile ? '14px' : '16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -692,8 +730,8 @@ const Chat: React.FC = () => {
                     boxShadow: (!message.trim() || isTyping) 
                       ? '0 2px 8px rgba(149, 165, 166, 0.3)' 
                       : '0 4px 15px rgba(22, 160, 133, 0.3)',
-                    minWidth: '60px',
-                    height: '52px'
+                    minWidth: isMobile ? '44px' : '60px',
+                    height: isMobile ? '44px' : '52px'
                   }}
                   onMouseEnter={(e) => {
                     if (!e.currentTarget.disabled) {
@@ -708,18 +746,18 @@ const Chat: React.FC = () => {
                     }
                   }}
                 >
-                  <Send size={20} />
+                  <Send size={isMobile ? 16 : 20} />
                 </button>
               </div>
               {error && (
                 <div style={{
                   color: '#e74c3c',
-                  marginTop: '12px',
-                  padding: '12px 16px',
+                  marginTop: '8px',
+                  padding: isMobile ? '8px 12px' : '12px 16px',
                   background: 'rgba(231, 76, 60, 0.1)',
                   border: '1px solid rgba(231, 76, 60, 0.3)',
                   borderRadius: '12px',
-                  fontSize: '14px'
+                  fontSize: isMobile ? '12px' : '14px'
                 }}>
                   {error}
                 </div>
@@ -798,37 +836,129 @@ const Chat: React.FC = () => {
           
           /* Mejoras para pantallas muy pequeñas */
           @media (max-width: 480px) {
+            body {
+              overflow: hidden;
+            }
+            
+            .sidebar {
+              padding: 10px !important;
+              max-height: 130px !important;
+            }
+            
+            .nuevo-chat-btn {
+              margin-top: 0 !important;
+              margin-bottom: 10px !important;
+              padding: 8px !important;
+              min-height: 40px !important;
+              font-size: 12px !important;
+            }
+            
+            .chat-item {
+              padding: 6px 8px !important;
+              margin-bottom: 2px !important;
+              min-height: 36px !important;
+            }
+            
             .messages-container {
               padding: 12px !important;
+              padding-bottom: 6px !important;
             }
             
             .message-content {
               max-width: 90% !important;
-              padding: 12px 16px !important;
-              font-size: 14px !important;
+              padding: 10px 14px !important;
+              font-size: 12px !important;
             }
             
             .input-area {
-              padding: 12px 16px !important;
+              padding: 10px 12px 14px !important;
             }
             
             .textarea-input {
-              padding: 12px 16px !important;
-              font-size: 14px !important;
+              padding: 10px 14px !important;
+              font-size: 13px !important;
+              min-height: 40px !important;
+            }
+            
+            .send-button {
+              min-width: 40px !important;
+              height: 40px !important;
+              padding: 10px !important;
             }
           }
           
           /* Asegurar que los elementos clickeables tengan suficiente área en móviles */
           @media (max-width: 768px) {
+            body {
+              overflow: hidden;
+            }
+            
             button {
               min-height: 44px;
             }
             
             .chat-item {
-              min-height: 44px;
+              min-height: 40px;
               display: flex;
               flex-direction: column;
               justify-content: center;
+            }
+            
+            .header-mobile {
+              min-height: 60px !important;
+              padding: 12px 16px !important;
+            }
+            
+            .sidebar-mobile {
+              max-height: 140px !important;
+              padding: 12px !important;
+            }
+            
+            .input-area-mobile {
+              margin-top: auto !important;
+              position: sticky !important;
+              bottom: 0 !important;
+            }
+          }
+          
+          /* Optimización para tablets en orientación landscape */
+          @media (max-width: 1024px) and (orientation: landscape) {
+            .sidebar {
+              width: 240px !important;
+            }
+            
+            .header {
+              padding: 12px 20px !important;
+            }
+          }
+          
+          /* Asegurar altura completa en todas las pantallas */
+          @media (max-height: 600px) {
+            .sidebar {
+              max-height: 100px !important;
+            }
+            
+            .nuevo-chat-btn {
+              padding: 6px !important;
+              margin-bottom: 8px !important;
+              font-size: 11px !important;
+              min-height: 36px !important;
+            }
+            
+            .chat-item {
+              padding: 4px 8px !important;
+              margin-bottom: 1px !important;
+              min-height: 32px !important;
+            }
+            
+            .messages-area {
+              flex: 1 !important;
+              min-height: auto !important;
+            }
+            
+            .header {
+              min-height: 50px !important;
+              padding: 8px 16px !important;
             }
           }
           
