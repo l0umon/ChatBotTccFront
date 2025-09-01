@@ -198,7 +198,7 @@ const Chat: React.FC = () => {
     setShowAdminPanel(false);
     switch (action) {
       case 'users':
-        window.location.href = '/admin/gestion-usuarios.html';
+        window.open('/admin/gestion-usuarios.html', '_blank');
         break;
       case 'settings':
         alert('Configuración - Próximamente disponible');
