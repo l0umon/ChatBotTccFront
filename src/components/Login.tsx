@@ -18,10 +18,28 @@ const Login = () => {
     
     try {
       const response = await Api.post('/auth/login', { email, password });
+      
+      // Guardar token
       localStorage.setItem('token', response.data.token);
+      
+      // Guardar datos del usuario
+      if (response.data.user) {
+        localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+        console.log('Datos de usuario guardados:', response.data.user);
+      } else {
+        console.log('No se recibieron datos de usuario del servidor');
+        // Guardar datos mínimos por defecto
+        localStorage.setItem('currentUser', JSON.stringify({
+          nombre: 'Usuario',
+          apellido: '',
+          rol: 'alumno'
+        }));
+      }
+      
       navigate('/chat');
     } catch (err) {
       setError('Credenciales incorrectas');
+      console.error('Error en login:', err);
     } finally {
       setIsLoading(false);
     }

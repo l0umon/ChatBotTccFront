@@ -53,12 +53,40 @@ const Chat: React.FC = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('currentUser');
+    
     if (!token) {
+      console.log('No hay token, redirigiendo al login');
       window.location.href = '/login';
       return;
     }
+    
     setAuthToken(token);
-    if (userData) setUser(JSON.parse(userData));
+    
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        console.log('Usuario cargado:', parsedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error al parsear datos del usuario:', error);
+        console.log('Datos de usuario raw:', userData);
+        // No redirigir al login por error de parsing, usar datos por defecto
+        setUser({
+          nombre: 'Usuario',
+          apellido: '',
+          rol: 'alumno'
+        });
+      }
+    } else {
+      console.warn('No hay datos de usuario en localStorage, usando valores por defecto');
+      // No redirigir al login, usar datos por defecto
+      setUser({
+        nombre: 'Usuario',
+        apellido: '',
+        rol: 'alumno'
+      });
+    }
+    
     fetchChats(token);
   }, []);
 
@@ -240,13 +268,26 @@ const Chat: React.FC = () => {
                 margin: '0 0 4px 0', 
                 fontWeight: '700', 
                 fontSize: isMobile ? '16px' : '20px',
-                color: '#ffffff'
+                color: '#ffffff',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
               }}>
-                {user ? `${user.nombre} ${user.apellido}` : 'Usuario'}
+                {user ? `${user.nombre} ${user.apellido}` : 'Cargando...'}
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: isMobile ? '13px' : '15px', opacity: 0.9, color: '#ffffff' }}>
-                  {user?.rol === 'administrador' ? 'Administrador' : user?.rol === 'personal' ? 'Personal' : 'Alumno'}
+                <span style={{ 
+                  fontSize: isMobile ? '13px' : '15px', 
+                  opacity: 0.95, 
+                  color: '#ffffff',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontWeight: '500',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                }}>
+                  {user?.rol === 'administrador' ? 'Administrador' : 
+                   user?.rol === 'personal' ? 'Personal' : 
+                   user?.rol === 'alumno' ? 'Alumno' : 
+                   user?.rol || 'Usuario'}
                 </span>
                 {user?.rol === 'administrador' && (
                   <div style={{ position: 'relative' }}>
