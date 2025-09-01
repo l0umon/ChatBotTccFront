@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Settings,
   Edit,
-  Trash2,
   X,
   Save,
   GraduationCap,
@@ -67,6 +66,7 @@ const UserManagement: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    console.log('Component mounted, calling fetchUsers...');
     fetchUsers();
   }, []);
 
@@ -102,6 +102,7 @@ const UserManagement: React.FC = () => {
           break;
       }
 
+      console.log('Filtered users:', filtered.length, 'users after filtering');
       setFilteredUsers(filtered);
     };
 
@@ -111,12 +112,21 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching users with token:', token ? 'Token present' : 'No token');
+      
       const response = await Api.get('/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data.users || []);
+      
+      console.log('Users response:', response.data);
+      // La estructura correcta es response.data.data, no response.data.users
+      const users = response.data.data || [];
+      console.log('Setting users:', users.length, 'users found');
+      
+      setUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]); // Asegurar que se limpia el estado en caso de error
     } finally {
       setLoading(false);
     }
@@ -143,20 +153,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await Api.delete(`/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -179,7 +175,7 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
+  const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('token');
       await Api.patch(`/admin/users/${userId}/status`, 
@@ -626,7 +622,8 @@ const UserManagement: React.FC = () => {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxSizing: 'border-box' as const,
                   background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  color: '#1f2937'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = '#047857';
@@ -653,14 +650,57 @@ const UserManagement: React.FC = () => {
                 { key: 'personal', icon: UserCheck, label: 'Personal' },
                 { key: 'administrador', icon: Shield, label: isMobile ? 'Admin' : 'Administradores' },
                 { key: 'blocked', icon: UserSlash, label: isMobile ? 'Bloq.' : 'Bloqueados' }
-              ].map(({ key, icon: Icon, label }) => (
+              ].map(({ key, icon: Icon, label }) => {
+                const getFilterColors = (filterKey: string, isActive: boolean) => {
+                  if (!isActive) {
+                    return {
+                      background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                    };
+                  }
+                  
+                  switch (filterKey) {
+                    case 'all':
+                      return {
+                        background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                        boxShadow: '0 4px 20px rgba(107, 114, 128, 0.25)'
+                      };
+                    case 'alumno':
+                      return {
+                        background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
+                        boxShadow: '0 4px 20px rgba(234, 179, 8, 0.25)'
+                      };
+                    case 'personal':
+                      return {
+                        background: 'linear-gradient(135deg, #00CCCC 0%, #00A8A8 100%)',
+                        boxShadow: '0 4px 20px rgba(0, 204, 204, 0.25)'
+                      };
+                    case 'administrador':
+                      return {
+                        background: 'linear-gradient(135deg, #581c87 0%, #4c1d95 100%)',
+                        boxShadow: '0 4px 20px rgba(88, 28, 135, 0.25)'
+                      };
+                    case 'blocked':
+                      return {
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        boxShadow: '0 4px 20px rgba(239, 68, 68, 0.25)'
+                      };
+                    default:
+                      return {
+                        background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                        boxShadow: '0 4px 20px rgba(4, 120, 87, 0.25)'
+                      };
+                  }
+                };
+
+                const filterColors = getFilterColors(key, activeFilter === key);
+                
+                return (
                 <button
                   key={key}
                   onClick={() => setActiveFilter(key)}
                   style={{
-                    background: activeFilter === key 
-                      ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
-                      : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                    background: filterColors.background,
                     color: activeFilter === key ? '#ffffff' : '#374151',
                     border: activeFilter === key 
                       ? '1px solid rgba(255, 255, 255, 0.3)' 
@@ -676,9 +716,7 @@ const UserManagement: React.FC = () => {
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     minWidth: isMobile ? 'auto' : 'auto',
                     whiteSpace: 'nowrap' as const,
-                    boxShadow: activeFilter === key 
-                      ? '0 4px 20px rgba(16, 185, 129, 0.25)' 
-                      : '0 2px 8px rgba(0, 0, 0, 0.05)',
+                    boxShadow: filterColors.boxShadow,
                     transform: 'translateY(0)'
                   }}
                   onMouseEnter={(e) => {
@@ -688,7 +726,8 @@ const UserManagement: React.FC = () => {
                       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
                     } else {
                       e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(16, 185, 129, 0.35)';
+                      const hoverColors = getFilterColors(key, true);
+                      e.currentTarget.style.boxShadow = hoverColors.boxShadow.replace('0.25', '0.35');
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -698,18 +737,18 @@ const UserManagement: React.FC = () => {
                       e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
                     } else {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(16, 185, 129, 0.25)';
+                      e.currentTarget.style.boxShadow = filterColors.boxShadow;
                     }
                   }}
                 >
-                  <Icon size={isMobile ? 14 : 16} />
-                  {label}
+                  <Icon size={isMobile ? 16 : 18} />
+                  <span>{label}</span>
                   <span style={{
                     background: activeFilter === key 
-                      ? 'rgba(255, 255, 255, 0.25)' 
-                      : '#047857',
-                    color: activeFilter === key ? '#ffffff' : '#ffffff',
-                    borderRadius: '20px',
+                      ? 'rgba(255, 255, 255, 0.2)' 
+                      : 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                    color: '#ffffff',
+                    borderRadius: '12px',
                     padding: '4px 10px',
                     fontSize: isMobile ? '10px' : '12px',
                     fontWeight: '700',
@@ -723,7 +762,8 @@ const UserManagement: React.FC = () => {
                     {getCountByFilter(key)}
                   </span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -881,7 +921,29 @@ const UserManagement: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user, index) => (
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ 
+                          padding: '40px 20px',
+                          textAlign: 'center' as const,
+                          color: '#6b7280',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '12px' }}>
+                            <Users size={48} color="#d1d5db" />
+                            <div>
+                              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                                No se encontraron usuarios
+                              </div>
+                              <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                                {searchTerm ? 'Intenta con otros términos de búsqueda' : 'No hay usuarios registrados en el sistema'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user, index) => (
                       <tr 
                         key={user.id}
                         style={{ 
@@ -957,18 +1019,21 @@ const UserManagement: React.FC = () => {
                             fontSize: isMobile ? '11px' : '13px',
                             fontWeight: '700',
                             background: user.rol === 'administrador' 
-                              ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
+                              ? 'linear-gradient(135deg, #581c87 0%, #4c1d95 100%)' 
                               : user.rol === 'personal' 
-                              ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-                              : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                              ? 'linear-gradient(135deg, #00CCCC 0%, #00A8A8 100%)' 
+                              : 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
                             color: '#ffffff',
                             whiteSpace: 'nowrap' as const,
                             boxShadow: user.rol === 'administrador' 
-                              ? '0 4px 16px rgba(4, 120, 87, 0.3)' 
+                              ? '0 4px 16px rgba(88, 28, 135, 0.3)' 
                               : user.rol === 'personal' 
-                              ? '0 4px 16px rgba(245, 158, 11, 0.3)' 
-                              : '0 4px 16px rgba(59, 130, 246, 0.3)',
-                            letterSpacing: '0.3px'
+                              ? '0 4px 16px rgba(0, 204, 204, 0.3)' 
+                              : '0 4px 16px rgba(234, 179, 8, 0.3)',
+                            letterSpacing: '0.3px',
+                            minWidth: isMobile ? '70px' : '85px',
+                            textAlign: 'center' as const,
+                            display: 'inline-block'
                           }}>
                             {user.rol === 'administrador' ? 'Admin' : 
                              user.rol === 'personal' ? 'Personal' : 'Estudiante'}
@@ -984,14 +1049,17 @@ const UserManagement: React.FC = () => {
                             fontSize: isMobile ? '11px' : '13px',
                             fontWeight: '700',
                             background: user.activo 
-                              ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
+                              ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
                               : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                             color: '#ffffff',
                             whiteSpace: 'nowrap' as const,
                             boxShadow: user.activo 
-                              ? '0 4px 16px rgba(4, 120, 87, 0.3)' 
+                              ? '0 4px 16px rgba(34, 197, 94, 0.3)' 
                               : '0 4px 16px rgba(239, 68, 68, 0.3)',
-                            letterSpacing: '0.3px'
+                            letterSpacing: '0.3px',
+                            minWidth: isMobile ? '70px' : '85px',
+                            textAlign: 'center' as const,
+                            display: 'inline-block'
                           }}>
                             {user.activo ? 'Activo' : 'Inactivo'}
                           </span>
@@ -1002,110 +1070,108 @@ const UserManagement: React.FC = () => {
                         }}>
                           <div style={{ 
                             display: 'flex', 
-                            gap: isMobile ? '4px' : '8px',
-                            flexDirection: isMobile ? 'column' : 'row'
+                            gap: isMobile ? '3px' : '6px',
+                            alignItems: 'center',
+                            justifyContent: isMobile ? 'center' : 'flex-start'
                           }}>
+                            {/* Botón Editar */}
                             <button
                               onClick={() => handleEditUser(user)}
                               style={{
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
                                 border: 'none',
                                 color: '#ffffff',
-                                borderRadius: '10px',
-                                width: isMobile ? '32px' : '40px',
-                                height: isMobile ? '32px' : '40px',
+                                borderRadius: '6px',
+                                padding: isMobile ? '6px 8px' : '8px 12px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
+                                gap: '4px',
                                 cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
-                                transform: 'translateY(0)'
+                                transition: 'all 0.3s ease',
+                                fontSize: isMobile ? '10px' : '12px',
+                                fontWeight: '600',
+                                boxShadow: '0 1px 4px rgba(6, 182, 212, 0.3)',
+                                minWidth: isMobile ? '60px' : '80px',
+                                height: isMobile ? '32px' : '36px',
+                                justifyContent: 'center'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(6, 182, 212, 0.4)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)';
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 1px 4px rgba(6, 182, 212, 0.3)';
                               }}
+                              title="Editar usuario"
                             >
-                              <Edit size={isMobile ? 16 : 18} />
+                              <Edit size={12} />
+                              {!isMobile && 'Editar'}
                             </button>
+
+                            {/* Botón Activar/Desactivar */}
                             <button
-                              onClick={() => toggleUserStatus(user.id, user.activo)}
+                              onClick={() => handleToggleStatus(user.id, !user.activo)}
                               style={{
                                 background: user.activo 
-                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
-                                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                                 border: 'none',
                                 color: '#ffffff',
-                                borderRadius: '10px',
-                                width: isMobile ? '32px' : '40px',
-                                height: isMobile ? '32px' : '40px',
+                                borderRadius: '6px',
+                                padding: isMobile ? '6px 8px' : '8px 12px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
+                                gap: '4px',
                                 cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transition: 'all 0.3s ease',
+                                fontSize: isMobile ? '10px' : '12px',
+                                fontWeight: '600',
                                 boxShadow: user.activo 
-                                  ? '0 4px 16px rgba(239, 68, 68, 0.3)' 
-                                  : '0 4px 16px rgba(16, 185, 129, 0.3)',
-                                transform: 'translateY(0)'
+                                  ? '0 1px 4px rgba(239, 68, 68, 0.3)'
+                                  : '0 1px 4px rgba(5, 150, 105, 0.3)',
+                                minWidth: isMobile ? '60px' : '80px',
+                                height: isMobile ? '32px' : '36px',
+                                justifyContent: 'center'
                               }}
                               onMouseEnter={(e) => {
-                                if (user.activo) {
-                                  e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
-                                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(239, 68, 68, 0.4)';
-                                } else {
-                                  e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
-                                }
-                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.background = user.activo 
+                                  ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+                                  : 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = user.activo 
+                                  ? '0 2px 8px rgba(239, 68, 68, 0.4)'
+                                  : '0 2px 8px rgba(5, 150, 105, 0.4)';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = user.activo 
-                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
-                                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                                e.currentTarget.style.boxShadow = user.activo 
-                                  ? '0 4px 16px rgba(239, 68, 68, 0.3)' 
-                                  : '0 4px 16px rgba(16, 185, 129, 0.3)';
+                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                                 e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = user.activo 
+                                  ? '0 1px 4px rgba(239, 68, 68, 0.3)'
+                                  : '0 1px 4px rgba(5, 150, 105, 0.3)';
                               }}
+                              title={user.activo ? 'Desactivar usuario' : 'Activar usuario'}
                             >
-                              {user.activo ? <UserSlash size={isMobile ? 16 : 18} /> : <CheckCircle size={isMobile ? 16 : 18} />}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              style={{
-                                background: '#ffebee',
-                                border: 'none',
-                                color: '#c62828',
-                                borderRadius: '8px',
-                                width: '36px',
-                                height: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#ffcdd2';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#ffebee';
-                              }}
-                            >
-                              <Trash2 size={16} />
+                              {user.activo ? (
+                                <>
+                                  <UserSlash size={12} />
+                                  {!isMobile && 'Desact.'}
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle size={12} />
+                                  {!isMobile && 'Activ.'}
+                                </>
+                              )}
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )))}
                   </tbody>
                 </table>
               </div>
