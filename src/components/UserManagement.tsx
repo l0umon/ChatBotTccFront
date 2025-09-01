@@ -19,7 +19,7 @@ import {
   GraduationCap,
   MessageSquare,
   BarChart3,
-  LogOut,
+  ArrowRight,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -45,6 +45,7 @@ const UserManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [newUser, setNewUser] = useState({
     nombre: '',
     apellido: '',
@@ -54,6 +55,16 @@ const UserManagement: React.FC = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Detectar dispositivo móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -207,9 +218,10 @@ const UserManagement: React.FC = () => {
   const containerStyle = {
     minHeight: '100vh',
     width: '100vw',
-    background: 'linear-gradient(135deg, #f8fdfa 0%, #ecf9f5 100%)',
-    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     display: 'flex',
+    flexDirection: isMobile ? 'column' as const : 'row' as const,
     position: 'fixed' as const,
     top: 0,
     left: 0,
@@ -217,33 +229,48 @@ const UserManagement: React.FC = () => {
   };
 
   const sidebarStyle = {
-    width: '280px',
-    background: 'linear-gradient(180deg, #2c3e50 0%, #34495e 100%)',
+    width: isMobile ? '100%' : '280px',
+    height: isMobile ? 'auto' : '100vh',
+    maxHeight: isMobile ? '200px' : 'none',
+    background: 'linear-gradient(145deg, #064e3b 0%, #065f46 50%, #047857 100%)',
     color: '#ffffff',
     display: 'flex',
     flexDirection: 'column' as const,
-    boxShadow: '4px 0 20px rgba(0, 0, 0, 0.1)'
+    boxShadow: isMobile 
+      ? '0 8px 32px rgba(5, 95, 70, 0.15)' 
+      : '8px 0 32px rgba(5, 95, 70, 0.15)',
+    overflowY: isMobile ? 'auto' as const : 'visible' as const,
+    flexShrink: 0,
+    backdropFilter: 'blur(10px)',
+    borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
   };
 
   const mainContentStyle = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column' as const,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    height: isMobile ? 'calc(100vh - 200px)' : '100vh'
   };
 
   const headerStyle = {
-    background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+    background: 'linear-gradient(135deg, #047857 0%, #065f46 50%, #064e3b 100%)',
     color: '#ffffff',
-    padding: '20px 30px',
-    boxShadow: '0 4px 20px rgba(22, 160, 133, 0.3)'
+    padding: isMobile ? '20px 24px' : '24px 32px',
+    boxShadow: '0 8px 32px rgba(4, 120, 87, 0.25)',
+    flexShrink: 0,
+    backdropFilter: 'blur(10px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    minHeight: '76px',
+    display: 'flex',
+    alignItems: 'center'
   };
 
   const contentStyle = {
     flex: 1,
-    padding: '30px',
+    padding: isMobile ? '20px' : '32px',
     overflowY: 'auto' as const,
-    background: 'linear-gradient(135deg, #f8fdfa 0%, #ecf9f5 100%)'
+    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
   };
 
   return (
@@ -252,31 +279,43 @@ const UserManagement: React.FC = () => {
       <div style={sidebarStyle}>
         {/* Logo */}
         <div style={{ 
-          padding: '30px 20px', 
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: isMobile ? '16px 20px' : '24px 24px', 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: isMobile ? '12px' : '16px',
+          minHeight: isMobile ? 'auto' : '76px',
+          height: isMobile ? 'auto' : '76px'
         }}>
           <div style={{
-            background: 'rgba(22, 160, 133, 0.2)',
-            borderRadius: '12px',
-            padding: '10px',
+            background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+            borderRadius: isMobile ? '12px' : '16px',
+            padding: isMobile ? '8px' : '12px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            boxShadow: '0 8px 32px rgba(4, 120, 87, 0.3)'
           }}>
-            <GraduationCap size={24} color="#16a085" />
+            <GraduationCap size={isMobile ? 20 : 28} color="#ffffff" />
           </div>
-          <span style={{ fontWeight: '700', fontSize: '18px' }}>ChatBot Universitario</span>
+          <div>
+            <div style={{ 
+              fontWeight: '700', 
+              fontSize: isMobile ? '16px' : '18px', 
+              lineHeight: '1.2',
+              color: '#ffffff'
+            }}>
+              ChatBot Universitario
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
-        <div style={{ flex: 1, padding: '20px' }}>
-          <div style={{ marginBottom: '30px' }}>
+        <div style={{ flex: 1, padding: isMobile ? '15px' : '20px' }}>
+          <div style={{ marginBottom: isMobile ? '20px' : '30px' }}>
             <span style={{ 
               color: '#bdc3c7', 
-              fontSize: '12px', 
+              fontSize: isMobile ? '11px' : '12px', 
               fontWeight: '600', 
               textTransform: 'uppercase',
               letterSpacing: '1px',
@@ -286,31 +325,34 @@ const UserManagement: React.FC = () => {
               Navegación
             </span>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px' }}>
               <button
                 style={{
                   background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: '#bdc3c7',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  padding: isMobile ? '12px 16px' : '14px 18px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: isMobile ? '10px' : '12px',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: '500',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   width: '100%',
-                  textAlign: 'left' as const
+                  textAlign: 'left' as const,
+                  backdropFilter: 'blur(10px)'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
                   e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.transform = 'translateX(4px)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.color = '#bdc3c7';
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                  e.currentTarget.style.transform = 'translateX(0)';
                 }}
               >
                 <BarChart3 size={18} />
@@ -319,32 +361,43 @@ const UserManagement: React.FC = () => {
 
               <button
                 style={{
-                  background: 'linear-gradient(135deg, rgba(22, 160, 133, 0.2) 0%, rgba(19, 141, 117, 0.1) 100%)',
-                  border: '1px solid rgba(22, 160, 133, 0.3)',
-                  color: '#16a085',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#ffffff',
+                  padding: isMobile ? '12px 16px' : '14px 18px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: isMobile ? '10px' : '12px',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: '600',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   width: '100%',
-                  textAlign: 'left' as const
+                  textAlign: 'left' as const,
+                  boxShadow: '0 4px 20px rgba(4, 120, 87, 0.25)',
+                  transform: 'translateY(0)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(4, 120, 87, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(4, 120, 87, 0.25)';
                 }}
               >
                 <Users size={18} />
                 Gestión de Usuarios
                 <span style={{
-                  background: '#16a085',
+                  background: 'rgba(255, 255, 255, 0.2)',
                   color: '#ffffff',
                   borderRadius: '20px',
-                  padding: '2px 8px',
+                  padding: '4px 10px',
                   fontSize: '12px',
                   fontWeight: '600',
-                  marginLeft: 'auto'
+                  marginLeft: 'auto',
+                  backdropFilter: 'blur(10px)'
                 }}>
                   {users.length}
                 </span>
@@ -353,28 +406,31 @@ const UserManagement: React.FC = () => {
               <button
                 style={{
                   background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: '#bdc3c7',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  padding: isMobile ? '12px 16px' : '14px 18px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: isMobile ? '10px' : '12px',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: '500',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   width: '100%',
-                  textAlign: 'left' as const
+                  textAlign: 'left' as const,
+                  backdropFilter: 'blur(10px)'
                 }}
                 onClick={() => window.close()}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
                   e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.transform = 'translateX(4px)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.color = '#bdc3c7';
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                  e.currentTarget.style.transform = 'translateX(0)';
                 }}
               >
                 <MessageSquare size={18} />
@@ -386,50 +442,79 @@ const UserManagement: React.FC = () => {
 
         {/* User Profile */}
         <div style={{ 
-          padding: '20px', 
+          padding: isMobile ? '15px' : '20px', 
           borderTop: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: isMobile ? '10px' : '12px'
         }}>
+          {/* User Info */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            gap: isMobile ? '10px' : '12px',
+            flex: 1,
+            minWidth: 0
           }}>
-            <Shield size={20} />
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '50%',
+              width: isMobile ? '36px' : '40px',
+              height: isMobile ? '36px' : '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Shield size={isMobile ? 18 : 20} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ 
+                fontWeight: '600', 
+                fontSize: isMobile ? '13px' : '14px',
+                whiteSpace: 'nowrap' as const,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>Administrador</div>
+              <div style={{ 
+                fontSize: isMobile ? '11px' : '12px', 
+                opacity: 0.7,
+                whiteSpace: 'nowrap' as const
+              }}>Admin</div>
+            </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: '600', fontSize: '14px' }}>Administrador</div>
-            <div style={{ fontSize: '12px', opacity: 0.7 }}>Admin</div>
-          </div>
+          
+          {/* Logout Button */}
           <button
             onClick={handleLogout}
             style={{
-              background: 'rgba(231, 76, 60, 0.2)',
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
               border: 'none',
-              color: '#e74c3c',
+              color: '#ffffff',
               borderRadius: '8px',
-              width: '36px',
-              height: '36px',
+              padding: isMobile ? '8px' : '10px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+              width: isMobile ? '36px' : '40px',
+              height: isMobile ? '36px' : '40px',
+              flexShrink: 0
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(231, 76, 60, 0.3)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(231, 76, 60, 0.2)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.3)';
             }}
+            title="Cerrar Sesión"
           >
-            <LogOut size={16} />
+            <ArrowRight size={isMobile ? 16 : 18} />
           </button>
         </div>
       </div>
@@ -438,40 +523,64 @@ const UserManagement: React.FC = () => {
       <div style={mainContentStyle}>
         {/* Header */}
         <div style={headerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            width: '100%'
+          }}>
             <div>
-              <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>
+              <h1 style={{ 
+                margin: 0, 
+                fontSize: isMobile ? '24px' : '28px', 
+                fontWeight: '700',
+                lineHeight: '1.2',
+                color: '#ffffff',
+                marginBottom: '4px'
+              }}>
                 Gestión de Usuarios
               </h1>
-              <p style={{ margin: 0, opacity: 0.9, fontSize: '16px' }}>
+              <p style={{ 
+                margin: 0, 
+                color: 'rgba(255, 255, 255, 0.9)', 
+                fontSize: isMobile ? '14px' : '16px',
+                fontWeight: '500',
+                lineHeight: '1.2'
+              }}>
                 Administra y controla los usuarios del sistema
               </p>
             </div>
             <button
               onClick={() => setShowRegisterModal(true)}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: 'none',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
                 color: '#ffffff',
-                padding: '12px 20px',
-                borderRadius: '10px',
+                padding: isMobile ? '12px 20px' : '14px 24px',
+                borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: isMobile ? '8px' : '10px',
                 cursor: 'pointer',
-                fontSize: '14px',
+                fontSize: isMobile ? '13px' : '14px',
                 fontWeight: '600',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 20px rgba(255, 255, 255, 0.1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(255, 255, 255, 0.2)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 255, 255, 0.1)';
               }}
             >
-              <UserPlus size={16} />
-              Registrar Usuario
+              <UserPlus size={isMobile ? 16 : 18} />
+              {isMobile ? 'Nuevo' : 'Registrar Usuario'}
             </button>
           </div>
         </div>
@@ -480,103 +589,136 @@ const UserManagement: React.FC = () => {
         <div style={contentStyle}>
           {/* Search and Filters */}
           <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '16px', 
-            padding: '30px', 
-            marginBottom: '30px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+            background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)', 
+            borderRadius: '20px', 
+            padding: isMobile ? '24px' : '32px', 
+            marginBottom: isMobile ? '24px' : '32px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.1)'
           }}>
             {/* Search */}
             <div style={{ 
               position: 'relative',
-              marginBottom: '25px'
+              marginBottom: isMobile ? '20px' : '25px'
             }}>
               <Search 
-                size={20} 
+                size={isMobile ? 18 : 20} 
                 style={{ 
                   position: 'absolute', 
-                  left: '15px', 
+                  left: isMobile ? '16px' : '18px', 
                   top: '50%', 
                   transform: 'translateY(-50%)',
-                  color: '#7f8c8d'
+                  color: '#047857'
                 }} 
               />
               <input
                 type="text"
-                placeholder="Buscar usuarios por nombre, email o ID..."
+                placeholder={isMobile ? "Buscar usuarios..." : "Buscar usuarios por nombre, email o ID..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '15px 15px 15px 50px',
-                  border: '2px solid #ecf0f1',
-                  borderRadius: '12px',
-                  fontSize: '14px',
+                  padding: isMobile ? '16px 16px 16px 48px' : '18px 20px 18px 54px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '16px',
+                  fontSize: isMobile ? '14px' : '15px',
                   outline: 'none',
-                  transition: 'border-color 0.3s ease',
-                  boxSizing: 'border-box' as const
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxSizing: 'border-box' as const,
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
+                  fontWeight: '500'
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = '#16a085';
+                  e.target.style.borderColor = '#047857';
+                  e.target.style.boxShadow = '0 0 0 4px rgba(4, 120, 87, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#ecf0f1';
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
 
             {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ 
+              display: 'flex', 
+              gap: isMobile ? '8px' : '12px', 
+              flexWrap: 'wrap',
+              overflowX: isMobile ? 'auto' : 'visible',
+              paddingBottom: isMobile ? '10px' : '0'
+            }}>
               {[
                 { key: 'all', icon: Users, label: 'Todos' },
-                { key: 'alumno', icon: UserGraduate, label: 'Estudiantes' },
+                { key: 'alumno', icon: UserGraduate, label: isMobile ? 'Estudiantes' : 'Estudiantes' },
                 { key: 'personal', icon: UserCheck, label: 'Personal' },
-                { key: 'administrador', icon: Shield, label: 'Administradores' },
-                { key: 'blocked', icon: UserSlash, label: 'Bloqueados' }
+                { key: 'administrador', icon: Shield, label: isMobile ? 'Admin' : 'Administradores' },
+                { key: 'blocked', icon: UserSlash, label: isMobile ? 'Bloq.' : 'Bloqueados' }
               ].map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveFilter(key)}
                   style={{
                     background: activeFilter === key 
-                      ? 'linear-gradient(135deg, #16a085 0%, #138d75 100%)' 
-                      : '#f8f9fa',
-                    color: activeFilter === key ? '#ffffff' : '#2c3e50',
-                    border: 'none',
-                    padding: '12px 16px',
-                    borderRadius: '10px',
+                      ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
+                      : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                    color: activeFilter === key ? '#ffffff' : '#374151',
+                    border: activeFilter === key 
+                      ? '1px solid rgba(255, 255, 255, 0.3)' 
+                      : '1px solid #d1d5db',
+                    padding: isMobile ? '10px 16px' : '12px 20px',
+                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: isMobile ? '6px' : '8px',
                     cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'all 0.3s ease'
+                    fontSize: isMobile ? '12px' : '14px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    minWidth: isMobile ? 'auto' : 'auto',
+                    whiteSpace: 'nowrap' as const,
+                    boxShadow: activeFilter === key 
+                      ? '0 4px 20px rgba(16, 185, 129, 0.25)' 
+                      : '0 2px 8px rgba(0, 0, 0, 0.05)',
+                    transform: 'translateY(0)'
                   }}
                   onMouseEnter={(e) => {
                     if (activeFilter !== key) {
-                      e.currentTarget.style.background = '#e9ecef';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
+                    } else {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(16, 185, 129, 0.35)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (activeFilter !== key) {
-                      e.currentTarget.style.background = '#f8f9fa';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                    } else {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(16, 185, 129, 0.25)';
                     }
                   }}
                 >
-                  <Icon size={16} />
+                  <Icon size={isMobile ? 14 : 16} />
                   {label}
                   <span style={{
                     background: activeFilter === key 
-                      ? 'rgba(255, 255, 255, 0.2)' 
-                      : '#16a085',
+                      ? 'rgba(255, 255, 255, 0.25)' 
+                      : '#047857',
                     color: activeFilter === key ? '#ffffff' : '#ffffff',
                     borderRadius: '20px',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    minWidth: '20px',
-                    textAlign: 'center' as const
+                    padding: '4px 10px',
+                    fontSize: isMobile ? '10px' : '12px',
+                    fontWeight: '700',
+                    minWidth: '24px',
+                    textAlign: 'center' as const,
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: activeFilter === key 
+                      ? 'none' 
+                      : '0 2px 8px rgba(4, 120, 87, 0.3)'
                   }}>
                     {getCountByFilter(key)}
                   </span>
@@ -600,7 +742,7 @@ const UserManagement: React.FC = () => {
               alignItems: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Users size={20} color="#16a085" />
+                <Users size={20} color="#047857" />
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Lista de Usuarios</h3>
               </div>
               <span style={{ 
@@ -630,82 +772,109 @@ const UserManagement: React.FC = () => {
                 Cargando usuarios...
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' as const }}>
+              <div style={{ 
+                overflowX: 'auto' as const,
+                width: '100%',
+                maxWidth: '100%',
+                borderRadius: '12px',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
+                backgroundColor: '#ffffff'
+              }}>
                 <table style={{ 
                   width: '100%', 
-                  borderCollapse: 'collapse' as const 
+                  borderCollapse: 'collapse' as const,
+                  minWidth: isMobile ? 'auto' : '800px',
+                  fontSize: isMobile ? '12px' : '14px'
                 }}>
                   <thead>
-                    <tr style={{ background: '#f8f9fa' }}>
+                    <tr style={{ background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)' }}>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #059669',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <UserCheck size={16} />
+                          <UserCheck size={isMobile ? 14 : 16} />
                           Usuario
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #34d399',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Mail size={16} />
+                          <Mail size={isMobile ? 16 : 18} />
                           Email
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #34d399',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <IdCard size={16} />
-                          Identificación
+                          <IdCard size={isMobile ? 16 : 18} />
+                          {isMobile ? 'ID' : 'Identificación'}
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #34d399',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <UserTag size={16} />
+                          <UserTag size={isMobile ? 16 : 18} />
                           Rol
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #34d399',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <CheckCircle size={16} />
+                          <CheckCircle size={isMobile ? 16 : 18} />
                           Estado
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '15px 20px', 
+                        padding: isMobile ? '16px 12px' : '20px 24px', 
                         textAlign: 'left' as const, 
-                        fontWeight: '600',
-                        color: '#2c3e50',
-                        fontSize: '14px'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: isMobile ? '12px' : '15px',
+                        whiteSpace: isMobile ? 'nowrap' as const : 'normal' as const,
+                        borderBottom: '3px solid #34d399',
+                        letterSpacing: '0.5px'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Settings size={16} />
+                          <Settings size={isMobile ? 16 : 18} />
                           Acciones
                         </div>
                       </th>
@@ -720,120 +889,194 @@ const UserManagement: React.FC = () => {
                           background: index % 2 === 0 ? '#ffffff' : '#fafbfc'
                         }}
                       >
-                        <td style={{ padding: '20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px',
+                          borderBottom: '1px solid #ecf0f1'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
                             <div style={{
-                              width: '40px',
-                              height: '40px',
+                              width: isMobile ? '36px' : '44px',
+                              height: isMobile ? '36px' : '44px',
                               borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                              background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               color: '#ffffff',
-                              fontWeight: '600',
-                              fontSize: '14px'
+                              fontWeight: '700',
+                              fontSize: isMobile ? '12px' : '15px',
+                              boxShadow: '0 4px 20px rgba(4, 120, 87, 0.3)',
+                              border: '2px solid #ffffff'
                             }}>
                               {user.nombre.charAt(0) + user.apellido.charAt(0)}
                             </div>
                             <div>
-                              <div style={{ fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                              <div style={{ 
+                                fontWeight: '600', 
+                                color: '#2c3e50', 
+                                fontSize: isMobile ? '12px' : '14px',
+                                lineHeight: '1.3'
+                              }}>
                                 {user.nombre} {user.apellido}
                               </div>
-                              <div style={{ color: '#7f8c8d', fontSize: '12px' }}>
+                              <div style={{ 
+                                color: '#7f8c8d', 
+                                fontSize: isMobile ? '10px' : '12px',
+                                display: isMobile ? 'none' : 'block'
+                              }}>
                                 ID: {user.id}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '20px', color: '#2c3e50', fontSize: '14px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px', 
+                          color: '#2c3e50', 
+                          fontSize: isMobile ? '11px' : '14px',
+                          borderBottom: '1px solid #ecf0f1',
+                          maxWidth: isMobile ? '120px' : 'none',
+                          wordBreak: isMobile ? 'break-word' as const : 'normal' as const
+                        }}>
                           {user.email}
                         </td>
-                        <td style={{ padding: '20px', color: '#2c3e50', fontSize: '14px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px', 
+                          color: '#2c3e50', 
+                          fontSize: isMobile ? '11px' : '14px',
+                          borderBottom: '1px solid #ecf0f1'
+                        }}>
                           {user.numero_identificacion || 'N/A'}
                         </td>
-                        <td style={{ padding: '20px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px',
+                          borderBottom: '1px solid #ecf0f1'
+                        }}>
                           <span style={{
-                            padding: '6px 12px',
+                            padding: isMobile ? '6px 12px' : '8px 16px',
                             borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
+                            fontSize: isMobile ? '11px' : '13px',
+                            fontWeight: '700',
                             background: user.rol === 'administrador' 
-                              ? '#e8f5e8' 
+                              ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
                               : user.rol === 'personal' 
-                              ? '#fff3cd' 
-                              : '#e3f2fd',
-                            color: user.rol === 'administrador' 
-                              ? '#2e7d32' 
+                              ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+                              : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            color: '#ffffff',
+                            whiteSpace: 'nowrap' as const,
+                            boxShadow: user.rol === 'administrador' 
+                              ? '0 4px 16px rgba(4, 120, 87, 0.3)' 
                               : user.rol === 'personal' 
-                              ? '#8a6d3b' 
-                              : '#1976d2'
+                              ? '0 4px 16px rgba(245, 158, 11, 0.3)' 
+                              : '0 4px 16px rgba(59, 130, 246, 0.3)',
+                            letterSpacing: '0.3px'
                           }}>
                             {user.rol === 'administrador' ? 'Admin' : 
                              user.rol === 'personal' ? 'Personal' : 'Estudiante'}
                           </span>
                         </td>
-                        <td style={{ padding: '20px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px',
+                          borderBottom: '1px solid #ecf0f1'
+                        }}>
                           <span style={{
-                            padding: '6px 12px',
+                            padding: isMobile ? '6px 12px' : '8px 16px',
                             borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            background: user.activo ? '#e8f5e8' : '#ffebee',
-                            color: user.activo ? '#2e7d32' : '#c62828'
+                            fontSize: isMobile ? '11px' : '13px',
+                            fontWeight: '700',
+                            background: user.activo 
+                              ? 'linear-gradient(135deg, #047857 0%, #065f46 100%)' 
+                              : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            color: '#ffffff',
+                            whiteSpace: 'nowrap' as const,
+                            boxShadow: user.activo 
+                              ? '0 4px 16px rgba(4, 120, 87, 0.3)' 
+                              : '0 4px 16px rgba(239, 68, 68, 0.3)',
+                            letterSpacing: '0.3px'
                           }}>
                             {user.activo ? 'Activo' : 'Inactivo'}
                           </span>
                         </td>
-                        <td style={{ padding: '20px' }}>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                        <td style={{ 
+                          padding: isMobile ? '12px 8px' : '20px',
+                          borderBottom: '1px solid #ecf0f1'
+                        }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            gap: isMobile ? '4px' : '8px',
+                            flexDirection: isMobile ? 'column' : 'row'
+                          }}>
                             <button
                               onClick={() => handleEditUser(user)}
                               style={{
-                                background: '#e3f2fd',
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                                 border: 'none',
-                                color: '#1976d2',
-                                borderRadius: '8px',
-                                width: '36px',
-                                height: '36px',
+                                color: '#ffffff',
+                                borderRadius: '10px',
+                                width: isMobile ? '32px' : '40px',
+                                height: isMobile ? '32px' : '40px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                transition: 'all 0.3s ease'
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                                transform: 'translateY(0)'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#bbdefb';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#e3f2fd';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.3)';
                               }}
                             >
-                              <Edit size={16} />
+                              <Edit size={isMobile ? 16 : 18} />
                             </button>
                             <button
                               onClick={() => toggleUserStatus(user.id, user.activo)}
                               style={{
-                                background: user.activo ? '#ffebee' : '#e8f5e8',
+                                background: user.activo 
+                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                                 border: 'none',
-                                color: user.activo ? '#c62828' : '#2e7d32',
-                                borderRadius: '8px',
-                                width: '36px',
-                                height: '36px',
+                                color: '#ffffff',
+                                borderRadius: '10px',
+                                width: isMobile ? '32px' : '40px',
+                                height: isMobile ? '32px' : '40px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                transition: 'all 0.3s ease'
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: user.activo 
+                                  ? '0 4px 16px rgba(239, 68, 68, 0.3)' 
+                                  : '0 4px 16px rgba(16, 185, 129, 0.3)',
+                                transform: 'translateY(0)'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = user.activo ? '#ffcdd2' : '#c8e6c8';
+                                if (user.activo) {
+                                  e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+                                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(239, 68, 68, 0.4)';
+                                } else {
+                                  e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
+                                }
+                                e.currentTarget.style.transform = 'translateY(-2px)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = user.activo ? '#ffebee' : '#e8f5e8';
+                                e.currentTarget.style.background = user.activo 
+                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                e.currentTarget.style.boxShadow = user.activo 
+                                  ? '0 4px 16px rgba(239, 68, 68, 0.3)' 
+                                  : '0 4px 16px rgba(16, 185, 129, 0.3)';
+                                e.currentTarget.style.transform = 'translateY(0)';
                               }}
                             >
-                              {user.activo ? <UserSlash size={16} /> : <CheckCircle size={16} />}
+                              {user.activo ? <UserSlash size={isMobile ? 16 : 18} /> : <CheckCircle size={isMobile ? 16 : 18} />}
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user.id)}
@@ -883,25 +1126,27 @@ const UserManagement: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 1000,
+          padding: isMobile ? '10px' : '0'
         }}>
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
-            width: '500px',
+            width: isMobile ? '95vw' : '500px',
+            maxWidth: isMobile ? '95vw' : '500px',
             maxHeight: '90vh',
             overflowY: 'auto' as const,
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
           }}>
             <div style={{
-              padding: '25px 30px',
+              padding: isMobile ? '20px' : '25px 30px',
               borderBottom: '1px solid #ecf0f1',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Edit size={20} color="#16a085" />
+              <h3 style={{ margin: 0, fontSize: isMobile ? '16px' : '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Edit size={isMobile ? 18 : 20} color="#047857" />
                 Editar Usuario
               </h3>
               <button
@@ -928,8 +1173,8 @@ const UserManagement: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleUpdateUser} style={{ padding: '30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <form onSubmit={handleUpdateUser} style={{ padding: isMobile ? '20px' : '30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
                     Nombre
@@ -1015,7 +1260,7 @@ const UserManagement: React.FC = () => {
                 />
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
                     Rol
@@ -1138,7 +1383,7 @@ const UserManagement: React.FC = () => {
                 <button
                   type="submit"
                   style={{
-                    background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                    background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                     border: 'none',
                     color: '#ffffff',
                     padding: '12px 20px',
@@ -1152,10 +1397,10 @@ const UserManagement: React.FC = () => {
                     gap: '8px'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #16a085 0%, #138d75 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
                   }}
                 >
                   <Save size={16} />
@@ -1179,25 +1424,27 @@ const UserManagement: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 1000,
+          padding: isMobile ? '10px' : '0'
         }}>
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
-            width: '500px',
+            width: isMobile ? '95vw' : '500px',
+            maxWidth: isMobile ? '95vw' : '500px',
             maxHeight: '90vh',
             overflowY: 'auto' as const,
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
           }}>
             <div style={{
-              padding: '25px 30px',
+              padding: isMobile ? '20px' : '25px 30px',
               borderBottom: '1px solid #ecf0f1',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <UserPlus size={20} color="#16a085" />
+              <h3 style={{ margin: 0, fontSize: isMobile ? '16px' : '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <UserPlus size={isMobile ? 18 : 20} color="#047857" />
                 Registrar Usuario
               </h3>
               <button
@@ -1224,8 +1471,8 @@ const UserManagement: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleCreateUser} style={{ padding: '30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <form onSubmit={handleCreateUser} style={{ padding: isMobile ? '20px' : '30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
                     Nombre
@@ -1311,7 +1558,7 @@ const UserManagement: React.FC = () => {
                 />
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
                     Número de Identificación
@@ -1450,7 +1697,7 @@ const UserManagement: React.FC = () => {
                 <button
                   type="submit"
                   style={{
-                    background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                    background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                     border: 'none',
                     color: '#ffffff',
                     padding: '12px 20px',
@@ -1464,10 +1711,10 @@ const UserManagement: React.FC = () => {
                     gap: '8px'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #16a085 0%, #138d75 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
                   }}
                 >
                   <UserPlus size={16} />
