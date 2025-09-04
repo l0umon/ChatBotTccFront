@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   UserPlus, 
@@ -18,9 +19,7 @@ import {
   GraduationCap,
   MessageSquare,
   BarChart3,
-  ArrowRight,
-  Eye,
-  EyeOff
+  ArrowRight
 } from 'lucide-react';
 import Api from './Api';
 
@@ -36,6 +35,7 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,17 +43,20 @@ const UserManagement: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [newUser, setNewUser] = useState({
-    nombre: '',
-    apellido: '',
-    email: '',
-    numero_identificacion: '',
-    rol: 'alumno',
-    password: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({ show: false, message: '', type: 'info' });
+
+  // Función para mostrar notificaciones
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
 
   // Detectar dispositivo móvil
   useEffect(() => {
@@ -111,7 +114,7 @@ const UserManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       console.log('Fetching users with token:', token ? 'Token present' : 'No token');
       
       const response = await Api.get('/admin/users', {
@@ -126,6 +129,7 @@ const UserManagement: React.FC = () => {
       setUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
+      showNotification('Error al cargar los usuarios. Por favor, intenta de nuevo.', 'error');
       setUsers([]); // Asegurar que se limpia el estado en caso de error
     } finally {
       setLoading(false);
@@ -142,49 +146,119 @@ const UserManagement: React.FC = () => {
     if (!editingUser) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       await Api.put(`/admin/users/${editingUser.id}`, editingUser, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowEditModal(false);
+      showNotification('Usuario actualizado exitosamente', 'success');
       fetchUsers();
     } catch (error) {
       console.error('Error updating user:', error);
-    }
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      await Api.post('/admin/users', newUser, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setShowRegisterModal(false);
-      setNewUser({
-        nombre: '',
-        apellido: '',
-        email: '',
-        numero_identificacion: '',
-        rol: 'alumno',
-        password: ''
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error('Error creating user:', error);
+      showNotification('Error al actualizar el usuario. Por favor, verifica los datos e intenta de nuevo.', 'error');
     }
   };
 
   const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
     try {
-      const token = localStorage.getItem('token');
-      await Api.patch(`/admin/users/${userId}/status`, 
-        { activo: !currentStatus },
+      console.log('=== TOGGLE STATUS DEBUG ===');
+      console.log('Function called with:', { userId, currentStatus, newStatus: !currentStatus });
+      
+      if (!userId || userId === undefined || userId === null) {
+        console.error('ERROR: Invalid user ID:', userId);
+        return;
+      }
+      
+      // Encontrar el usuario completo
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        console.error('ERROR: Usuario no encontrado:', userId);
+        return;
+      }
+      
+      console.log('Usuario encontrado:', user);
+      
+      const token = localStorage.getItem('authToken');
+      console.log('Token present:', !!token);
+      
+      if (!token) {
+        console.error('ERROR: No authentication token found');
+        return;
+      }
+      
+      // Crear el objeto completo del usuario con el estado actualizado
+      const updatedUserData = {
+        nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email,
+        rol: user.rol,
+        numero_identificacion: user.numero_identificacion,
+        activo: !currentStatus
+      };
+      
+      console.log('Making API request to:', `/admin/users/${userId}`);
+      console.log('Request payload (full user):', updatedUserData);
+      
+      // Usar PUT con el objeto completo del usuario (como en el JS)
+      const response = await Api.put(`/admin/users/${userId}`, 
+        updatedUserData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchUsers();
+      
+      console.log('✅ API request successful');
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
+      const action = currentStatus ? 'bloqueado' : 'activado';
+      const notificationType = currentStatus ? 'error' : 'success'; // Rojo para bloquear, verde para activar
+      const message = currentStatus ? 'Usuario bloqueado exitosamente' : 'Usuario activado exitosamente';
+      showNotification(message, notificationType);
+      console.log(`✅ Usuario ${action} exitosamente`);
+      
+      await fetchUsers();
+      console.log('✅ Users refreshed successfully');
+      console.log('=== TOGGLE STATUS COMPLETE ===');
+      
     } catch (error) {
-      console.error('Error toggling user status:', error);
+      console.error('❌ ERROR in handleToggleStatus:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error constructor:', error?.constructor?.name);
+      
+      if (error && typeof error === 'object') {
+        if ('response' in error) {
+          const axiosError = error as { response: { data: unknown; status: number; statusText?: string } };
+          console.error('Axios Response Error:');
+          console.error('- Status:', axiosError.response.status);
+          console.error('- Status Text:', axiosError.response.statusText);
+          console.error('- Data:', axiosError.response.data);
+          
+          // Mostrar mensaje amigable según el código de error
+          if (axiosError.response.status === 401) {
+            showNotification('No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.', 'error');
+          } else if (axiosError.response.status === 403) {
+            showNotification('No tienes autorización para cambiar el estado de este usuario.', 'error');
+          } else if (axiosError.response.status === 404) {
+            showNotification('Usuario no encontrado. La página se actualizará automáticamente.', 'error');
+            setTimeout(() => fetchUsers(), 2000);
+          } else if (axiosError.response.status >= 500) {
+            showNotification('Error del servidor. Por favor, intenta de nuevo en unos momentos.', 'error');
+          } else {
+            showNotification('Error al cambiar el estado del usuario. Por favor, intenta de nuevo.', 'error');
+          }
+        } else if ('request' in error) {
+          console.error('Axios Request Error - No response received');
+          showNotification('Error de conexión. Verifica tu conexión a internet e intenta de nuevo.', 'error');
+        } else if ('message' in error) {
+          console.error('Error message:', (error as Error).message);
+          showNotification('Error inesperado. Por favor, intenta de nuevo.', 'error');
+        } else {
+          console.error('Unknown error object:', error);
+          showNotification('Error desconocido al cambiar el estado del usuario. Por favor, intenta de nuevo.', 'error');
+        }
+      } else {
+        console.error('Non-object error:', error);
+        showNotification('Error inesperado al cambiar el estado del usuario. Por favor, intenta de nuevo.', 'error');
+      }
     }
   };
 
@@ -206,7 +280,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     window.location.href = '/login';
   };
@@ -214,8 +288,8 @@ const UserManagement: React.FC = () => {
   const containerStyle = {
     minHeight: '100vh',
     width: '100vw',
-    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    background: 'linear-gradient(135deg, #047857 0%, #065f46 25%, #064e3b 50%, #0f172a 100%)',
+    fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     display: 'flex',
     flexDirection: isMobile ? 'column' as const : 'row' as const,
     position: 'fixed' as const,
@@ -246,7 +320,10 @@ const UserManagement: React.FC = () => {
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-    height: isMobile ? 'calc(100vh - 200px)' : '100vh'
+    height: isMobile ? 'calc(100vh - 200px)' : '100vh',
+    background: 'rgba(15, 23, 42, 0.3)',
+    backdropFilter: 'blur(10px)',
+    borderLeft: isMobile ? 'none' : '1px solid rgba(16, 185, 129, 0.2)'
   };
 
   const headerStyle = {
@@ -547,7 +624,10 @@ const UserManagement: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setShowRegisterModal(true)}
+              onClick={() => {
+                console.log('Redirigiendo a página de registro de administrador...');
+                navigate('/admin/register'); // Redirigir a la ruta del RegisterAdmin
+              }}
               style={{
                 background: 'rgba(255, 255, 255, 0.15)',
                 border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -804,7 +884,7 @@ const UserManagement: React.FC = () => {
                   width: '40px', 
                   height: '40px', 
                   border: '4px solid #ecf0f1',
-                  borderTop: '4px solid #16a085',
+                  borderTop: '4px solid #10b981',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite',
                   margin: '0 auto 20px'
@@ -975,7 +1055,7 @@ const UserManagement: React.FC = () => {
                             <div>
                               <div style={{ 
                                 fontWeight: '600', 
-                                color: '#2c3e50', 
+                                color: '#1f2937', 
                                 fontSize: isMobile ? '12px' : '14px',
                                 lineHeight: '1.3'
                               }}>
@@ -993,7 +1073,7 @@ const UserManagement: React.FC = () => {
                         </td>
                         <td style={{ 
                           padding: isMobile ? '12px 8px' : '20px', 
-                          color: '#2c3e50', 
+                          color: '#1f2937', 
                           fontSize: isMobile ? '11px' : '14px',
                           borderBottom: '1px solid #ecf0f1',
                           maxWidth: isMobile ? '120px' : 'none',
@@ -1003,7 +1083,7 @@ const UserManagement: React.FC = () => {
                         </td>
                         <td style={{ 
                           padding: isMobile ? '12px 8px' : '20px', 
-                          color: '#2c3e50', 
+                          color: '#1f2937', 
                           fontSize: isMobile ? '11px' : '14px',
                           borderBottom: '1px solid #ecf0f1'
                         }}>
@@ -1113,7 +1193,11 @@ const UserManagement: React.FC = () => {
 
                             {/* Botón Activar/Desactivar */}
                             <button
-                              onClick={() => handleToggleStatus(user.id, !user.activo)}
+                              onClick={() => {
+                                console.log('🔄 Button clicked for user:', user);
+                                console.log('🔄 Calling handleToggleStatus with:', { userId: user.id, currentStatus: user.activo });
+                                handleToggleStatus(user.id, user.activo);
+                              }}
                               style={{
                                 background: user.activo 
                                   ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
@@ -1228,7 +1312,7 @@ const UserManagement: React.FC = () => {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = '#f8f9fa';
-                  e.currentTarget.style.color = '#2c3e50';
+                  e.currentTarget.style.color = '#1f2937';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'none';
@@ -1242,7 +1326,7 @@ const UserManagement: React.FC = () => {
             <form onSubmit={handleUpdateUser} style={{ padding: isMobile ? '20px' : '30px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                     Nombre
                   </label>
                   <input
@@ -1257,10 +1341,12 @@ const UserManagement: React.FC = () => {
                       fontSize: '14px',
                       outline: 'none',
                       transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
+                      boxSizing: 'border-box' as const,
+                      background: '#ffffff',
+                      color: '#1f2937'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
+                      e.target.style.borderColor = '#10b981';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#ecf0f1';
@@ -1270,7 +1356,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                     Apellido
                   </label>
                   <input
@@ -1285,10 +1371,12 @@ const UserManagement: React.FC = () => {
                       fontSize: '14px',
                       outline: 'none',
                       transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
+                      boxSizing: 'border-box' as const,
+                      background: '#ffffff',
+                      color: '#1f2937'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
+                      e.target.style.borderColor = '#10b981';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#ecf0f1';
@@ -1299,7 +1387,7 @@ const UserManagement: React.FC = () => {
               </div>
               
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                   Email
                 </label>
                 <input
@@ -1314,10 +1402,12 @@ const UserManagement: React.FC = () => {
                     fontSize: '14px',
                     outline: 'none',
                     transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box' as const
+                    boxSizing: 'border-box' as const,
+                    background: '#ffffff',
+                    color: '#1f2937'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#16a085';
+                    e.target.style.borderColor = '#10b981';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#ecf0f1';
@@ -1328,7 +1418,7 @@ const UserManagement: React.FC = () => {
               
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                     Rol
                   </label>
                   <select
@@ -1343,10 +1433,11 @@ const UserManagement: React.FC = () => {
                       outline: 'none',
                       transition: 'border-color 0.3s ease',
                       boxSizing: 'border-box' as const,
-                      background: '#ffffff'
+                      background: '#ffffff',
+                      color: '#1f2937'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
+                      e.target.style.borderColor = '#10b981';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#ecf0f1';
@@ -1360,7 +1451,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                     Estado
                   </label>
                   <select
@@ -1375,10 +1466,11 @@ const UserManagement: React.FC = () => {
                       outline: 'none',
                       transition: 'border-color 0.3s ease',
                       boxSizing: 'border-box' as const,
-                      background: '#ffffff'
+                      background: '#ffffff',
+                      color: '#1f2937'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
+                      e.target.style.borderColor = '#10b981';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#ecf0f1';
@@ -1392,7 +1484,7 @@ const UserManagement: React.FC = () => {
               </div>
               
               <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                   Número de Identificación
                 </label>
                 <input
@@ -1407,10 +1499,12 @@ const UserManagement: React.FC = () => {
                     fontSize: '14px',
                     outline: 'none',
                     transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box' as const
+                    boxSizing: 'border-box' as const,
+                    background: '#ffffff',
+                    color: '#1f2937'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#16a085';
+                    e.target.style.borderColor = '#10b981';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#ecf0f1';
@@ -1478,317 +1572,47 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Register User Modal */}
-      {showRegisterModal && (
+      {/* Notificación Toast */}
+      {notification.show && (
         <div style={{
           position: 'fixed' as const,
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
+          top: '20px',
+          right: '20px',
+          background: notification.type === 'success' 
+            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+            : notification.type === 'error'
+            ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          color: '#ffffff',
+          padding: isMobile ? '16px 20px' : '18px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+          zIndex: 10000,
+          maxWidth: isMobile ? '280px' : '400px',
+          fontSize: isMobile ? '14px' : '15px',
+          fontWeight: '600',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: isMobile ? '10px' : '0'
+          gap: '12px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          animation: 'slideInRight 0.3s ease-out'
         }}>
           <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            width: isMobile ? '95vw' : '500px',
-            maxWidth: isMobile ? '95vw' : '500px',
-            maxHeight: '90vh',
-            overflowY: 'auto' as const,
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
-            <div style={{
-              padding: isMobile ? '20px' : '25px 30px',
-              borderBottom: '1px solid #ecf0f1',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <h3 style={{ margin: 0, fontSize: isMobile ? '16px' : '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <UserPlus size={isMobile ? 18 : 20} color="#047857" />
-                Registrar Usuario
-              </h3>
-              <button
-                onClick={() => setShowRegisterModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#7f8c8d',
-                  cursor: 'pointer',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f8f9fa';
-                  e.currentTarget.style.color = '#2c3e50';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = '#7f8c8d';
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateUser} style={{ padding: isMobile ? '20px' : '30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                    Nombre
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.nombre}
-                    onChange={(e) => setNewUser({...newUser, nombre: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #ecf0f1',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#ecf0f1';
-                    }}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                    Apellido
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.apellido}
-                    onChange={(e) => setNewUser({...newUser, apellido: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #ecf0f1',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#ecf0f1';
-                    }}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #ecf0f1',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box' as const
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#16a085';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#ecf0f1';
-                  }}
-                  required
-                />
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                    Número de Identificación
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.numero_identificacion}
-                    onChange={(e) => setNewUser({...newUser, numero_identificacion: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #ecf0f1',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#ecf0f1';
-                    }}
-                  />
-                </div>
-                
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                    Rol
-                  </label>
-                  <select
-                    value={newUser.rol}
-                    onChange={(e) => setNewUser({...newUser, rol: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #ecf0f1',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const,
-                      background: '#ffffff'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#ecf0f1';
-                    }}
-                    required
-                  >
-                    <option value="alumno">Estudiante</option>
-                    <option value="personal">Personal</option>
-                    <option value="administrador">Administrador</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50', fontSize: '14px' }}>
-                  Contraseña
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '12px 40px 12px 12px',
-                      border: '2px solid #ecf0f1',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box' as const
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#16a085';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#ecf0f1';
-                    }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: '#7f8c8d',
-                      cursor: 'pointer',
-                      padding: '4px'
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterModal(false)}
-                  style={{
-                    background: '#f8f9fa',
-                    border: 'none',
-                    color: '#6c757d',
-                    padding: '12px 20px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#e9ecef';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }}
-                >
-                  <X size={16} />
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
-                    border: 'none',
-                    color: '#ffffff',
-                    padding: '12px 20px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
-                  }}
-                >
-                  <UserPlus size={16} />
-                  Crear Usuario
-                </button>
-              </div>
-            </form>
+            {notification.type === 'success' && '✓'}
+            {notification.type === 'error' && '✕'}
+            {notification.type === 'info' && 'ℹ'}
           </div>
+          <span style={{ lineHeight: '1.4' }}>{notification.message}</span>
         </div>
       )}
 
@@ -1798,6 +1622,17 @@ const UserManagement: React.FC = () => {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+          
+          @keyframes slideInRight {
+            from {
+              opacity: 0;
+              transform: translateX(100%);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
           }
         `}
       </style>

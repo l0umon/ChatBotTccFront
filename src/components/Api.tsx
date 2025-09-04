@@ -1,11 +1,24 @@
 import axios from 'axios';
 
 const Api = axios.create({
-  baseURL: 'http://localhost:3000/api', // URL de la API
+  baseURL: '/api',  // Usar el proxy de Vite
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('token')}`, // Si el token está en localStorage
   },
 });
+
+// Add request interceptor to include auth token if available
+Api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default Api;

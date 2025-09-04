@@ -51,7 +51,7 @@ const Chat: React.FC = () => {
 
   // On mount: check auth and load user/chats
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');  // Cambiado de 'token' a 'authToken'
     const userData = localStorage.getItem('currentUser');
     
     if (!token) {
@@ -93,16 +93,15 @@ const Chat: React.FC = () => {
   // Fetch all chats
   const fetchChats = async (token: string) => {
     try {
-      const res = await Api.get('/chat', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await Api.get('/chat');
       setChats(res.data.chats || []);
       if (res.data.chats && res.data.chats.length > 0) {
         loadChat(res.data.chats[0].id, token);
       } else {
         handleNewChat(token);
       }
-    } catch {
+    } catch (error) {
+      console.error('Error fetching chats:', error);
       setError('Error al cargar los chats');
     }
   };
@@ -112,12 +111,11 @@ const Chat: React.FC = () => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
-      const res = await Api.get(`/chat/${chatId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await Api.get(`/chat/${chatId}`);
       setCurrentChatId(chatId);
       setMessages(res.data.chat.mensajes || []);
-    } catch {
+    } catch (error) {
+      console.error('Error loading chat:', error);
       setError('Error al cargar el chat');
     }
   };
@@ -127,9 +125,7 @@ const Chat: React.FC = () => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
-      const res = await Api.post('/chat', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await Api.post('/chat', {});
       setCurrentChatId(res.data.chat.id);
       setMessages([]);
       fetchChats(token);
@@ -160,9 +156,7 @@ const Chat: React.FC = () => {
     setIsTyping(true);
     
     try {
-      const res = await Api.post(`/chat/${currentChatId}/messages`, { mensaje: userMsg.contenido }, {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
+      const res = await Api.post(`/chat/${currentChatId}/messages`, { mensaje: userMsg.contenido });
       
       setIsTyping(false);
       setMessages((prev) => [
@@ -173,7 +167,8 @@ const Chat: React.FC = () => {
           contenido: res.data.mensaje_asistente?.contenido || 'Sin respuesta'
         }
       ]);
-    } catch {
+    } catch (error) {
+      console.error('Error sending message:', error);
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
@@ -188,7 +183,7 @@ const Chat: React.FC = () => {
 
   // Logout
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');  // Cambiado de 'token' a 'authToken'
     localStorage.removeItem('currentUser');
     window.location.href = '/login';
   };
@@ -550,7 +545,7 @@ const Chat: React.FC = () => {
             {/* Messages Area */}
             <div style={{
               flex: 1,
-              padding: isMobile ? '8px 12px' : '16px 20px',
+              padding: isMobile ? '20px 12px 8px 12px' : '24px 20px 16px 20px',
               paddingBottom: isMobile ? '80px' : '100px',
               overflowY: 'auto',
               display: 'flex',
@@ -565,7 +560,8 @@ const Chat: React.FC = () => {
                   alignItems: 'flex-start',
                   gap: isMobile ? '12px' : '16px',
                   animation: 'slideIn 0.3s ease-out',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  marginTop: isMobile ? '20px' : '32px'
                 }}>
                   <div style={{
                     background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
@@ -596,13 +592,14 @@ const Chat: React.FC = () => {
                 </div>
               )}
               
-              {messages.map((msg) => (
+              {messages.map((msg, index) => (
                 <div key={msg.id} style={{
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: isMobile ? '12px' : '16px',
                   animation: 'slideIn 0.3s ease-out',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  marginTop: index === 0 ? (isMobile ? '20px' : '32px') : '0px'
                 }}>
                   <div style={{
                     background: msg.rol === 'usuario' 

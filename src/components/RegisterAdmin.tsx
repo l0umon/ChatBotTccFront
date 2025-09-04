@@ -9,11 +9,13 @@ import {
   EyeOff, 
   UserPlus, 
   User,
+  Shield,
+  Briefcase,
   AlertCircle,
   ArrowLeft
 } from 'lucide-react';
 
-const Register = () => {
+const RegisterAdmin = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +30,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('alumno');
 
   // Professional input styles
   const inputStyle = {
@@ -63,6 +66,9 @@ const Register = () => {
       ...prev,
       [name]: value
     }));
+    if (name === 'role') {
+      setSelectedRole(value);
+    }
     if (error) setError('');
   };
 
@@ -74,6 +80,13 @@ const Register = () => {
     // Validate password confirmation
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate role selection
+    if (!formData.role) {
+      setError('Selecciona tu rol en la universidad');
       setIsLoading(false);
       return;
     }
@@ -587,51 +600,106 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Role Display */}
+            {/* Role Selection */}
             <div>
               <label style={{ 
                 display: 'block', 
-                marginBottom: '0.75rem', 
+                marginBottom: '1rem', 
                 fontWeight: '600',
                 color: '#374151',
                 fontSize: '0.95rem'
               }}>
-                Rol
+                Selecciona tu rol
               </label>
-              <div style={{
-                padding: '1rem',
-                border: '2px solid #10b981',
-                borderRadius: '12px',
-                textAlign: 'center',
-                background: 'rgba(16, 185, 129, 0.05)',
+              <div className="register-role-grid" style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem'
+                gap: '0.75rem',
+                justifyContent: 'space-between'
               }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <GraduationCap size={20} color="white" />
-                </div>
-                <div style={{
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  color: '#10b981'
-                }}>
-                  Alumno
-                </div>
+                {[
+                  { 
+                    value: 'alumno', 
+                    label: 'Alumno', 
+                    icon: GraduationCap,
+                    gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                  },
+                  { 
+                    value: 'personal', 
+                    label: 'Personal', 
+                    icon: Briefcase,
+                    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                  },
+                  { 
+                    value: 'administrador', 
+                    label: 'Admin', 
+                    icon: Shield,
+                    gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  }
+                ].map((roleOption) => (
+                  <div
+                    key={roleOption.value}
+                    onClick={() => {
+                      setSelectedRole(roleOption.value);
+                      setFormData(prev => ({ ...prev, role: roleOption.value }));
+                    }}
+                    className={`register-role-option ${selectedRole === roleOption.value ? 'selected' : ''}`}
+                    style={{
+                      padding: '0.75rem 0.5rem',
+                      border: `2px solid ${selectedRole === roleOption.value ? '#10b981' : '#e5e7eb'}`,
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      flex: '1',
+                      minWidth: '0'
+                    }}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: selectedRole === roleOption.value ? roleOption.gradient : '#f3f4f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <roleOption.icon 
+                        size={18} 
+                        color={selectedRole === roleOption.value ? 'white' : '#6b7280'} 
+                      />
+                    </div>
+                    <div style={{
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      color: selectedRole === roleOption.value ? '#10b981' : '#374151'
+                    }}>
+                      {roleOption.label}
+                    </div>
+                    {selectedRole === roleOption.value && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.375rem',
+                        right: '0.375rem',
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#10b981',
+                        boxShadow: '0 0 0 2px white'
+                      }} />
+                    )}
+                  </div>
+                ))}
               </div>
               <input
                 type="hidden"
                 name="role"
-                value="alumno"
+                value={selectedRole}
               />
             </div>
 
@@ -799,7 +867,7 @@ const Register = () => {
             {/* Botón Volver */}
             <button
               type="button"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/admin/users')}
               style={{
                 width: '100%',
                 padding: '1rem 2rem',
@@ -837,47 +905,6 @@ const Register = () => {
               Volver
             </button>
 
-            {/* Login Link */}
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: '1.5rem',
-              padding: '1rem 0',
-              borderTop: '1px solid #f3f4f6'
-            }}>
-              <span style={{ 
-                color: '#6b7280', 
-                fontSize: '0.9rem',
-                fontWeight: '400'
-              }}>
-                ¿Ya tienes una cuenta?{' '}
-              </span>
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#10b981',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '6px',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-                  e.currentTarget.style.textDecoration = 'underline';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.textDecoration = 'none';
-                }}
-              >
-                Inicia sesión
-              </button>
-            </div>
           </form>
         </div>
       </div>
@@ -886,4 +913,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterAdmin;
