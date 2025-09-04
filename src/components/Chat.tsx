@@ -210,7 +210,7 @@ const Chat: React.FC = () => {
     <div style={{
       height: '100vh',
       width: '100vw',
-      background: 'linear-gradient(135deg, #16a085 0%, #2c8d6f 50%, #34495e 100%)',
+      background: 'linear-gradient(135deg, #047857 0%, #065f46 50%, #064e3b 100%)',
       padding: '0',
       margin: '0',
       boxSizing: 'border-box',
@@ -233,13 +233,13 @@ const Chat: React.FC = () => {
       }}>
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, #16a085 0%, #138d75 50%, #117864 100%)',
+          background: 'linear-gradient(135deg, #047857 0%, #065f46 50%, #064e3b 100%)',
           color: '#ffffff',
           padding: isMobile ? '12px 16px' : '16px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 4px 20px rgba(22, 160, 133, 0.3)',
+          boxShadow: '0 4px 20px rgba(4, 120, 87, 0.3)',
           flexShrink: 0,
           minHeight: isMobile ? '60px' : '70px',
           zIndex: 10
@@ -312,18 +312,18 @@ const Chat: React.FC = () => {
                         top: '48px',
                         right: '0',
                         background: '#ffffff',
-                        color: '#2c3e50',
+                        color: '#1f2937',
                         borderRadius: '16px',
                         boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
                         minWidth: '260px',
                         zIndex: 1000,
                         overflow: 'hidden',
-                        border: '1px solid rgba(22, 160, 133, 0.1)'
+                        border: '1px solid rgba(4, 120, 87, 0.1)'
                       }}>
                         <div style={{
                           padding: '20px',
                           borderBottom: '1px solid #ecf0f1',
-                          background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                          background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                           color: '#ffffff'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -354,16 +354,16 @@ const Chat: React.FC = () => {
                                 fontWeight: '500',
                                 transition: 'all 0.3s ease',
                                 marginBottom: '4px',
-                                color: '#2c3e50'
+                                color: '#1f2937'
                               }}
                               onClick={() => handleAdminNav(key)}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#f8f9fa';
-                                e.currentTarget.style.color = '#16a085';
+                                e.currentTarget.style.color = '#10b981';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = 'none';
-                                e.currentTarget.style.color = '#2c3e50';
+                                e.currentTarget.style.color = '#1f2937';
                               }}
                             >
                               <Icon size={18} />
@@ -418,7 +418,7 @@ const Chat: React.FC = () => {
           {/* Sidebar */}
           <div style={{
             width: isMobile ? '100%' : '280px',
-            background: 'linear-gradient(180deg, #2c3e50 0%, #34495e 100%)',
+            background: 'linear-gradient(180deg, #1f2937 0%, #0f172a 100%)',
             padding: isMobile ? '12px' : '20px',
             borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
             borderBottom: isMobile ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
@@ -434,7 +434,7 @@ const Chat: React.FC = () => {
               onClick={() => handleNewChat()}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)',
+                background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                 color: '#ffffff',
                 borderRadius: '12px',
                 padding: isMobile ? '12px' : '16px',
@@ -448,7 +448,7 @@ const Chat: React.FC = () => {
                 cursor: 'pointer',
                 fontSize: isMobile ? '14px' : '16px',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 6px 20px rgba(26, 188, 156, 0.4)',
+                boxShadow: '0 6px 20px rgba(4, 120, 87, 0.25)',
                 flexShrink: 0,
                 minHeight: isMobile ? '48px' : '52px',
                 position: 'relative',
@@ -456,14 +456,14 @@ const Chat: React.FC = () => {
                 border: '2px solid rgba(255, 255, 255, 0.2)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #1dd1a1 0%, #1abc9c 100%)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(26, 188, 156, 0.5)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(4, 120, 87, 0.35)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(26, 188, 156, 0.4)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(4, 120, 87, 0.25)';
               }}
             >
               <Plus size={16} />
@@ -484,13 +484,13 @@ const Chat: React.FC = () => {
                     borderRadius: '10px',
                     marginBottom: isMobile ? '8px' : '12px',
                     background: currentChatId === chat.id 
-                      ? 'linear-gradient(135deg, rgba(22, 160, 133, 0.2) 0%, rgba(19, 141, 117, 0.1) 100%)'
+                      ? 'linear-gradient(135deg, rgba(4, 120, 87, 0.2) 0%, rgba(6, 95, 70, 0.1) 100%)'
                       : 'transparent',
                     cursor: 'pointer',
                     fontWeight: currentChatId === chat.id ? '600' : '500',
-                    color: currentChatId === chat.id ? '#16a085' : '#bdc3c7',
+                    color: currentChatId === chat.id ? '#10b981' : '#bdc3c7',
                     transition: 'all 0.3s ease',
-                    border: currentChatId === chat.id ? '1px solid rgba(22, 160, 133, 0.3)' : '1px solid transparent',
+                    border: currentChatId === chat.id ? '1px solid rgba(4, 120, 87, 0.3)' : '1px solid transparent',
                     minHeight: isMobile ? '50px' : '60px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -564,14 +564,14 @@ const Chat: React.FC = () => {
                   marginTop: isMobile ? '20px' : '32px'
                 }}>
                   <div style={{
-                    background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                    background: 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                     borderRadius: '50%',
                     width: isMobile ? '40px' : '44px',
                     height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 15px rgba(22, 160, 133, 0.4)',
+                    boxShadow: '0 4px 15px rgba(4, 120, 87, 0.4)',
                     flexShrink: 0
                   }}>
                     <Bot color="#ffffff" size={isMobile ? 20 : 24} />
@@ -582,10 +582,10 @@ const Chat: React.FC = () => {
                     padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
                     maxWidth: isMobile ? '80%' : '75%',
-                    border: '1px solid rgba(22, 160, 133, 0.1)',
+                    border: '1px solid rgba(4, 120, 87, 0.1)',
                     fontSize: isMobile ? '14px' : '15px',
                     lineHeight: '1.6',
-                    color: '#2c3e50'
+                    color: '#1f2937'
                   }}>
                     ¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?
                   </div>
@@ -604,21 +604,21 @@ const Chat: React.FC = () => {
                   <div style={{
                     background: msg.rol === 'usuario' 
                       ? 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
-                      : 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                      : 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                     borderRadius: '50%',
                     width: isMobile ? '40px' : '44px',
                     height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: msg.rol === 'usuario' ? '2px solid #16a085' : 'none',
+                    border: msg.rol === 'usuario' ? '2px solid #10b981' : 'none',
                     boxShadow: msg.rol === 'usuario' 
-                      ? '0 4px 15px rgba(22, 160, 133, 0.2)'
-                      : '0 4px 15px rgba(22, 160, 133, 0.4)',
+                      ? '0 4px 15px rgba(4, 120, 87, 0.2)'
+                      : '0 4px 15px rgba(4, 120, 87, 0.4)',
                     flexShrink: 0
                   }}>
                     {msg.rol === 'usuario' ? 
-                      <User color="#16a085" size={isMobile ? 20 : 24} /> : 
+                      <User color="#10b981" size={isMobile ? 20 : 24} /> : 
                       <Bot color="#ffffff" size={isMobile ? 20 : 24} />
                     }
                   </div>
@@ -630,11 +630,11 @@ const Chat: React.FC = () => {
                     padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
                     maxWidth: isMobile ? '80%' : '75%',
-                    border: '1px solid rgba(22, 160, 133, 0.1)',
+                    border: '1px solid rgba(4, 120, 87, 0.1)',
                     fontSize: isMobile ? '14px' : '15px',
                     lineHeight: '1.6',
                     wordBreak: 'break-word',
-                    color: '#2c3e50'
+                    color: '#1f2937'
                   }}>
                     {msg.contenido}
                   </div>
@@ -649,14 +649,14 @@ const Chat: React.FC = () => {
                   marginBottom: '8px'
                 }}>
                   <div style={{
-                    background: 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                    background: 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                     borderRadius: '50%',
                     width: isMobile ? '40px' : '44px',
                     height: isMobile ? '40px' : '44px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 15px rgba(22, 160, 133, 0.4)',
+                    boxShadow: '0 4px 15px rgba(4, 120, 87, 0.4)',
                     flexShrink: 0
                   }}>
                     <Bot color="#ffffff" size={isMobile ? 20 : 24} />
@@ -666,7 +666,7 @@ const Chat: React.FC = () => {
                     borderRadius: '16px',
                     padding: isMobile ? '14px 18px' : '18px 22px',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                    border: '1px solid rgba(22, 160, 133, 0.1)',
+                    border: '1px solid rgba(4, 120, 87, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
@@ -680,7 +680,7 @@ const Chat: React.FC = () => {
                             width: isMobile ? '4px' : '6px',
                             height: isMobile ? '4px' : '6px',
                             borderRadius: '50%',
-                            background: '#16a085',
+                            background: '#10b981',
                             animation: 'bounce 1.4s infinite ease-in-out both',
                             animationDelay: `${-0.32 + i * 0.16}s`
                           }}
@@ -697,7 +697,7 @@ const Chat: React.FC = () => {
             {/* Input Area */}
             <div style={{
               padding: isMobile ? '8px 12px 12px' : '12px 20px 16px',
-              borderTop: '1px solid rgba(22, 160, 133, 0.1)',
+              borderTop: '1px solid rgba(4, 120, 87, 0.1)',
               background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
               backdropFilter: 'blur(20px)',
               flexShrink: 0,
@@ -729,12 +729,12 @@ const Chat: React.FC = () => {
                     background: '#ffffff',
                     fontFamily: 'inherit',
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
-                    color: '#2c3e50',
+                    color: '#1f2937',
                     lineHeight: '1.4'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#16a085';
-                    e.target.style.boxShadow = '0 4px 20px rgba(22, 160, 133, 0.15)';
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.boxShadow = '0 4px 20px rgba(4, 120, 87, 0.15)';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#e8f8f5';
@@ -753,7 +753,7 @@ const Chat: React.FC = () => {
                   style={{
                     background: (!message.trim() || isTyping) 
                       ? '#95a5a6' 
-                      : 'linear-gradient(135deg, #16a085 0%, #138d75 100%)',
+                      : 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '16px',
@@ -767,19 +767,19 @@ const Chat: React.FC = () => {
                     transition: 'all 0.3s ease',
                     boxShadow: (!message.trim() || isTyping) 
                       ? '0 2px 8px rgba(149, 165, 166, 0.3)' 
-                      : '0 4px 15px rgba(22, 160, 133, 0.3)',
+                      : '0 4px 15px rgba(4, 120, 87, 0.3)',
                     minWidth: isMobile ? '44px' : '60px',
                     height: isMobile ? '44px' : '52px'
                   }}
                   onMouseEnter={(e) => {
                     if (!e.currentTarget.disabled) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #10b981 100%)';
                       e.currentTarget.style.transform = 'translateY(-2px)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!e.currentTarget.disabled) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #16a085 0%, #138d75 100%)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #065f46 100%)';
                       e.currentTarget.style.transform = 'translateY(0)';
                     }
                   }}
@@ -833,17 +833,17 @@ const Chat: React.FC = () => {
           }
           
           ::-webkit-scrollbar-track {
-            background: rgba(22, 160, 133, 0.1);
+            background: rgba(4, 120, 87, 0.1);
             border-radius: 4px;
           }
           
           ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #16a085 0%, #138d75 100%);
+            background: linear-gradient(135deg, #10b981 0%, #065f46 100%);
             border-radius: 4px;
           }
           
           ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+            background: linear-gradient(135deg, #047857 0%, #10b981 100%);
           }
           
           /* Asegurar que el textarea tenga buen contraste en todos los navegadores */
@@ -1004,7 +1004,7 @@ const Chat: React.FC = () => {
           @media (prefers-color-scheme: dark) {
             textarea {
               background: #ffffff !important;
-              color: #2c3e50 !important;
+              color: #1f2937 !important;
             }
           }
         `}
