@@ -494,7 +494,7 @@ const UserManagement: React.FC = () => {
                   textAlign: 'left' as const,
                   backdropFilter: 'blur(10px)'
                 }}
-                onClick={() => window.close()}
+                onClick={() => window.location.href = '/chat'}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
                   e.currentTarget.style.color = '#ffffff';
