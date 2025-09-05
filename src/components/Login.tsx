@@ -6,7 +6,6 @@ import {
   Eye, 
   EyeOff, 
   LogIn,
-  User,
   AlertCircle,
   GraduationCap,
   UserPlus
@@ -75,24 +74,36 @@ const Login = () => {
       }
       
       navigate('/chat');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error en login:', err);
       
       // Manejo específico de errores
-      if (err.response?.status === 429) {
-        setError(err.response?.data || 'Demasiados intentos de autenticación. Intenta nuevamente en 15 minutos.');
-      } else if (err.response?.status === 401) {
+      const error = err as { 
+        response?: { 
+          status?: number; 
+          data?: string | { message?: string } 
+        };
+        code?: string;
+      };
+      
+      if (error.response?.status === 429) {
+        const data = error.response.data;
+        const message = typeof data === 'string' ? data : 'Demasiados intentos de autenticación. Intenta nuevamente en 15 minutos.';
+        setError(message);
+      } else if (error.response?.status === 401) {
         setError('Credenciales incorrectas. Verifica tu email y contraseña.');
-      } else if (err.response?.status === 403) {
+      } else if (error.response?.status === 403) {
         setError('Acceso restringido. El sistema está temporalmente restringido o tu cuenta no tiene permisos para acceder en este momento.');
-      } else if (err.response?.status === 404) {
+      } else if (error.response?.status === 404) {
         setError('Usuario no encontrado. Verifica tu email.');
-      } else if (err.response?.status >= 500) {
+      } else if (error.response?.status && error.response.status >= 500) {
         setError('Error del servidor. Intenta nuevamente más tarde.');
-      } else if (err.code === 'NETWORK_ERROR' || !err.response) {
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
         setError('Error de conexión. Verifica tu conexión a internet.');
       } else {
-        setError(err.response?.data?.message || 'Error al iniciar sesión. Intenta nuevamente.');
+        const data = error.response?.data;
+        const message = typeof data === 'object' && data?.message ? data.message : 'Error al iniciar sesión. Intenta nuevamente.';
+        setError(message);
       }
     } finally {
       setIsLoading(false);

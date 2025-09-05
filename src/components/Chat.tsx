@@ -87,7 +87,51 @@ const Chat: React.FC = () => {
       });
     }
     
-    fetchChats(token);
+    // Fetch chats inline to avoid dependency issues
+    const loadInitialChats = async () => {
+      try {
+        const res = await Api.get('/chat');
+        setChats(res.data.chats || []);
+        if (res.data.chats && res.data.chats.length > 0) {
+          // Load first chat inline
+          try {
+            const chatRes = await Api.get(`/chat/${res.data.chats[0].id}`);
+            setCurrentChatId(res.data.chats[0].id);
+            setMessages(chatRes.data.chat.mensajes || []);
+          } catch (error) {
+            console.error('Error loading chat:', error);
+            setError('Error al cargar el chat');
+          }
+        } else {
+          // Create new chat inline
+          try {
+            const newChatRes = await Api.post('/chat', {});
+            setCurrentChatId(newChatRes.data.chat.id);
+            setMessages([]);
+            // Refresh chats list
+            const refreshRes = await Api.get('/chat');
+            setChats(refreshRes.data.chats || []);
+            setTimeout(() => {
+              setMessages([
+                {
+                  id: Date.now(),
+                  rol: 'asistente',
+                  contenido: '¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?'
+                }
+              ]);
+            }, 200);
+          } catch (error) {
+            console.error('Error creating new chat:', error);
+            setError('Error al crear nuevo chat');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+        setError('Error al cargar los chats');
+      }
+    };
+    
+    loadInitialChats();
   }, []);
 
   // Fetch all chats

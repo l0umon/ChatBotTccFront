@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -51,12 +51,37 @@ const UserManagement: React.FC = () => {
   }>({ show: false, message: '', type: 'info' });
 
   // Función para mostrar notificaciones
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ show: true, message, type });
     setTimeout(() => {
       setNotification(prev => ({ ...prev, show: false }));
     }, 4000);
-  };
+  }, []);
+
+  // Función para obtener usuarios
+  const fetchUsers = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      console.log('Fetching users with token:', token ? 'Token present' : 'No token');
+      
+      const response = await Api.get('/admin/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Users response:', response.data);
+      // La estructura correcta es response.data.data, no response.data.users
+      const users = response.data.data || [];
+      console.log('Setting users:', users.length, 'users found');
+      
+      setUsers(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showNotification('Error al cargar los usuarios. Por favor, intenta de nuevo.', 'error');
+      setUsers([]); // Asegurar que se limpia el estado en caso de error
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   // Detectar dispositivo móvil
   useEffect(() => {
@@ -71,7 +96,7 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     console.log('Component mounted, calling fetchUsers...');
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   useEffect(() => {
     const filterUsers = () => {
@@ -111,30 +136,6 @@ const UserManagement: React.FC = () => {
 
     filterUsers();
   }, [users, searchTerm, activeFilter]);
-
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      console.log('Fetching users with token:', token ? 'Token present' : 'No token');
-      
-      const response = await Api.get('/admin/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('Users response:', response.data);
-      // La estructura correcta es response.data.data, no response.data.users
-      const users = response.data.data || [];
-      console.log('Setting users:', users.length, 'users found');
-      
-      setUsers(users);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      showNotification('Error al cargar los usuarios. Por favor, intenta de nuevo.', 'error');
-      setUsers([]); // Asegurar que se limpia el estado en caso de error
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -417,6 +418,7 @@ const UserManagement: React.FC = () => {
                   textAlign: 'left' as const,
                   backdropFilter: 'blur(10px)'
                 }}
+                onClick={() => window.location.href = '/admin/dashboard'}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
                   e.currentTarget.style.color = '#ffffff';
