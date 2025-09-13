@@ -32,6 +32,14 @@ const Chat: React.FC = () => {
   const [error, setError] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [limiteInfo, setLimiteInfo] = useState<{
+    limite_aplicado: number;
+    total_mensajes: number;
+    mensajes_mostrados: number;
+    mensajes_ocultos: number;
+    tiene_maximo: boolean;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Detectar dispositivo móvil
@@ -51,8 +59,22 @@ const Chat: React.FC = () => {
 
   // On mount: check auth and load user/chats
   useEffect(() => {
-    const token = localStorage.getItem('authToken');  // Cambiado de 'token' a 'authToken'
+    if (isInitialized) {
+      console.log('⚠️ Componente ya inicializado, saltando...');
+      return;
+    }
+    
+    console.log('🔄 INICIALIZANDO COMPONENTE CHAT');
+    setIsInitialized(true);
+    
+    const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('currentUser');
+    const savedChatId = localStorage.getItem('currentChatId');
+    
+    console.log('🔍 Datos en localStorage:');
+    console.log('  - authToken:', !!token);
+    console.log('  - currentUser:', !!userData);
+    console.log('  - currentChatId:', savedChatId);
     
     if (!token) {
       console.log('No hay token, redirigiendo al login');
@@ -62,6 +84,19 @@ const Chat: React.FC = () => {
     
     setAuthToken(token);
     
+    // Restaurar información de límites si existe
+    const savedLimiteInfo = localStorage.getItem('limiteInfo');
+    if (savedLimiteInfo) {
+      try {
+        const parsedLimiteInfo = JSON.parse(savedLimiteInfo);
+        console.log('🔄 Restaurando información de límites:', parsedLimiteInfo);
+        setLimiteInfo(parsedLimiteInfo);
+      } catch (error) {
+        console.error('Error al restaurar límiteInfo:', error);
+        localStorage.removeItem('limiteInfo');
+      }
+    }
+    
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -70,7 +105,6 @@ const Chat: React.FC = () => {
       } catch (error) {
         console.error('Error al parsear datos del usuario:', error);
         console.log('Datos de usuario raw:', userData);
-        // No redirigir al login por error de parsing, usar datos por defecto
         setUser({
           nombre: 'Usuario',
           apellido: '',
@@ -79,85 +113,99 @@ const Chat: React.FC = () => {
       }
     } else {
       console.warn('No hay datos de usuario en localStorage, usando valores por defecto');
-      // No redirigir al login, usar datos por defecto
       setUser({
         nombre: 'Usuario',
         apellido: '',
         rol: 'alumno'
       });
     }
-    
-    // Fetch chats inline to avoid dependency issues
-    const loadInitialChats = async () => {
+
+    // Fetch all chats inline
+    const fetchChats = async () => {
       try {
+        console.log('📋 Cargando lista de chats...');
         const res = await Api.get('/chat');
+        console.log('📋 Chats recibidos:', res.data.chats?.length || 0);
         setChats(res.data.chats || []);
-        if (res.data.chats && res.data.chats.length > 0) {
-          // Load first chat inline
-          try {
-            const chatRes = await Api.get(`/chat/${res.data.chats[0].id}`);
-            setCurrentChatId(res.data.chats[0].id);
-            setMessages(chatRes.data.chat.mensajes || []);
-          } catch (error) {
-            console.error('Error loading chat:', error);
-            setError('Error al cargar el chat');
-          }
+        
+        // Check if there's a saved currentChatId in localStorage
+        const savedChatId = localStorage.getItem('currentChatId');
+        
+        if (savedChatId && res.data.chats?.some((chat: { id: number }) => chat.id.toString() === savedChatId)) {
+          console.log('✅ Restaurando chat guardado:', savedChatId);
+          loadChat(parseInt(savedChatId), token);
+        } else if (res.data.chats && res.data.chats.length > 0) {
+          console.log('💬 Cargando primer chat disponible');
+          loadChat(res.data.chats[0].id, token);
         } else {
-          // Create new chat inline
-          try {
-            const newChatRes = await Api.post('/chat', {});
-            setCurrentChatId(newChatRes.data.chat.id);
-            setMessages([]);
-            // Refresh chats list
-            const refreshRes = await Api.get('/chat');
-            setChats(refreshRes.data.chats || []);
-            setTimeout(() => {
-              setMessages([
-                {
-                  id: Date.now(),
-                  rol: 'asistente',
-                  contenido: '¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?'
-                }
-              ]);
-            }, 200);
-          } catch (error) {
-            console.error('Error creating new chat:', error);
-            setError('Error al crear nuevo chat');
-          }
+          console.log('🆕 No hay chats, creando nuevo');
+          handleNewChat(token);
         }
       } catch (error) {
         console.error('Error fetching chats:', error);
         setError('Error al cargar los chats');
       }
     };
-    
-    loadInitialChats();
-  }, []);
 
-  // Fetch all chats
-  const fetchChats = async (token: string) => {
-    try {
-      const res = await Api.get('/chat');
-      setChats(res.data.chats || []);
-      if (res.data.chats && res.data.chats.length > 0) {
-        loadChat(res.data.chats[0].id, token);
-      } else {
-        handleNewChat(token);
-      }
-    } catch (error) {
-      console.error('Error fetching chats:', error);
-      setError('Error al cargar los chats');
-    }
-  };
+    fetchChats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load messages for a chat
   const loadChat = async (chatId: number, tokenOverride?: string) => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
-      const res = await Api.get(`/chat/${chatId}`);
+      console.log('💬 Cargando chat:', chatId);
+      const res = await Api.get(`/chat/${chatId}?limit=100`);  // Solicitar hasta 100 mensajes
+      console.log('🔍 Respuesta completa del servidor:', res.data);
+      
       setCurrentChatId(chatId);
-      setMessages(res.data.chat.mensajes || []);
+      localStorage.setItem('currentChatId', chatId.toString());
+      
+      const mensajes = res.data.chat.mensajes || [];
+      const limiteData = res.data.chat.limite_info || null;
+      
+      console.log('📨 Mensajes recibidos:', mensajes.length);
+      
+      // Guardar información del límite INMEDIATAMENTE
+      console.log('🔥 Estableciendo limiteInfo:', limiteData);
+      
+      // Establecer limiteInfo directamente
+      setLimiteInfo(limiteData);
+      console.log('🔄 LimiteInfo establecido inmediatamente:', limiteData);
+      
+      if (limiteData) {
+        localStorage.setItem('limiteInfo', JSON.stringify(limiteData));
+        console.log('💾 Guardado en localStorage:', limiteData);
+        if (limiteData.tiene_maximo) {
+          console.log('⚠️ LÍMITE ALCANZADO - Debe mostrarse mensaje:', limiteData);
+          console.log('📊 Estadísticas del límite:', {
+            total: limiteData.total_mensajes,
+            mostrados: limiteData.mensajes_mostrados,
+            ocultos: limiteData.mensajes_ocultos,
+            tieneMaximo: limiteData.tiene_maximo
+          });
+        }
+      } else {
+        localStorage.removeItem('limiteInfo');
+        console.log('🧹 Límite limpiado');
+      }
+      
+      if (mensajes.length > 0) {
+        console.log('📨 Primer mensaje:', { id: mensajes[0].id, rol: mensajes[0].rol, contenido: mensajes[0].contenido?.substring(0, 50) + '...' });
+        console.log('📨 Último mensaje:', { id: mensajes[mensajes.length-1].id, rol: mensajes[mensajes.length-1].rol, contenido: mensajes[mensajes.length-1].contenido?.substring(0, 50) + '...' });
+      }
+      
+      console.log('🔄 Estableciendo estado del chat...');
+      setMessages(mensajes);
+      
+      // Verificación post-setMessages
+      setTimeout(() => {
+        console.log('🔍 Verificación post-setMessages:', { chatId, mensajesEnEstado: mensajes.length, primerMensajeId: mensajes[0]?.id });
+      }, 100);
+      
+      console.log('✅ Chat inicial cargado:', chatId, 'con', mensajes.length, 'mensajes');
     } catch (error) {
       console.error('Error loading chat:', error);
       setError('Error al cargar el chat');
@@ -169,20 +217,30 @@ const Chat: React.FC = () => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
+      console.log('🆕 Creando nuevo chat...');
       const res = await Api.post('/chat', {});
       setCurrentChatId(res.data.chat.id);
-      setMessages([]);
-      fetchChats(token);
-      setTimeout(() => {
-        setMessages([
-          {
-            id: Date.now(),
-            rol: 'asistente',
-            contenido: '¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?'
-          }
-        ]);
-      }, 200);
-    } catch {
+      localStorage.setItem('currentChatId', res.data.chat.id.toString());
+      
+      // Set welcome message immediately (no setTimeout)
+      setMessages([
+        {
+          id: Date.now(),
+          rol: 'asistente',
+          contenido: '¡Hola! Soy tu asistente virtual universitario. ¿En qué puedo ayudarte hoy?'
+        }
+      ]);
+      
+      // Limpiar información de límites para el chat nuevo
+      setLimiteInfo(null);
+      localStorage.removeItem('limiteInfo');
+      
+      // Refresh chats list
+      const refreshRes = await Api.get('/chat');
+      setChats(refreshRes.data.chats || []);
+      
+    } catch (error) {
+      console.error('Error creating new chat:', error);
       setError('Error al crear nuevo chat');
     }
   };
@@ -636,6 +694,7 @@ const Chat: React.FC = () => {
                 </div>
               )}
               
+              {/* Mensaje de límite de mensajes */}
               {messages.map((msg, index) => (
                 <div key={msg.id} style={{
                   display: 'flex',
@@ -678,7 +737,8 @@ const Chat: React.FC = () => {
                     fontSize: isMobile ? '14px' : '15px',
                     lineHeight: '1.6',
                     wordBreak: 'break-word',
-                    color: '#1f2937'
+                    color: '#1f2937',
+                    whiteSpace: 'pre-wrap'
                   }}>
                     {msg.contenido}
                   </div>
@@ -749,6 +809,52 @@ const Chat: React.FC = () => {
               bottom: 0,
               zIndex: 10
             }}>
+              {/* Mensaje de límite de mensajes - VISIBLE EN ÁREA DE INPUT */}
+              {limiteInfo && limiteInfo.tiene_maximo && (
+                <div style={{
+                  marginBottom: '12px',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  borderRadius: '12px',
+                  padding: isMobile ? '10px 14px' : '12px 16px',
+                  border: '1px solid #f59e0b',
+                  boxShadow: '0 2px 10px rgba(245, 158, 11, 0.1)'
+                }}>
+                  <div style={{
+                    fontSize: isMobile ? '12px' : '13px',
+                    color: '#92400e',
+                    fontWeight: '600',
+                    marginBottom: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}>
+                    <span>⚠️</span>
+                    Chat con límite de mensajes
+                  </div>
+                  <div style={{
+                    fontSize: isMobile ? '11px' : '12px',
+                    color: '#78350f',
+                    textAlign: 'center',
+                    lineHeight: '1.4'
+                  }}>
+                    {limiteInfo.mensajes_ocultos > 0 ? (
+                      <>
+                        <strong>{limiteInfo.mensajes_ocultos}</strong> mensajes anteriores ocultos.
+                        <br />
+                        <span style={{ fontStyle: 'italic' }}>💡 Crea un nuevo chat para ver todo el historial.</span>
+                      </>
+                    ) : (
+                      <>
+                        Mostrando los <strong>{messages.length}</strong> mensajes más recientes.
+                        <br />
+                        <span style={{ fontStyle: 'italic' }}>💡 Crea un nuevo chat si necesitas más espacio.</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div style={{
                 display: 'flex',
                 gap: isMobile ? '8px' : '12px',
@@ -757,24 +863,36 @@ const Chat: React.FC = () => {
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Escribe tu mensaje aquí..."
+                  placeholder={limiteInfo && limiteInfo.tiene_maximo 
+                    ? "No puedes enviar más mensajes en este chat (límite alcanzado)" 
+                    : "Escribe tu mensaje aquí..."}
                   rows={1}
+                  disabled={limiteInfo?.tiene_maximo === true}
                   style={{
                     flex: 1,
                     resize: 'none',
                     borderRadius: '16px',
-                    border: '2px solid #e8f8f5',
+                    border: limiteInfo?.tiene_maximo === true 
+                      ? '2px solid #fbbf24' 
+                      : '2px solid #e8f8f5',
                     padding: isMobile ? '12px 16px' : '16px 20px',
                     fontSize: isMobile ? '14px' : '15px',
                     minHeight: isMobile ? '44px' : '52px',
                     maxHeight: isMobile ? '88px' : '120px',
                     outline: 'none',
                     transition: 'all 0.3s ease',
-                    background: '#ffffff',
+                    background: limiteInfo?.tiene_maximo === true 
+                      ? '#fef3c7' 
+                      : '#ffffff',
                     fontFamily: 'inherit',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
-                    color: '#1f2937',
-                    lineHeight: '1.4'
+                    boxShadow: limiteInfo?.tiene_maximo === true 
+                      ? '0 4px 15px rgba(251, 191, 36, 0.2)' 
+                      : '0 4px 15px rgba(0, 0, 0, 0.05)',
+                    color: limiteInfo?.tiene_maximo === true 
+                      ? '#92400e' 
+                      : '#1f2937',
+                    lineHeight: '1.4',
+                    cursor: limiteInfo?.tiene_maximo === true ? 'not-allowed' : 'text'
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#10b981';
@@ -787,15 +905,17 @@ const Chat: React.FC = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSendMessage();
+                      if (!(limiteInfo?.tiene_maximo === true)) {
+                        handleSendMessage();
+                      }
                     }
                   }}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || isTyping}
+                  disabled={!message.trim() || isTyping || (limiteInfo?.tiene_maximo === true)}
                   style={{
-                    background: (!message.trim() || isTyping) 
+                    background: (!message.trim() || isTyping || (limiteInfo?.tiene_maximo === true)) 
                       ? '#95a5a6' 
                       : 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                     color: '#ffffff',
@@ -807,9 +927,9 @@ const Chat: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: (!message.trim() || isTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!message.trim() || isTyping || (limiteInfo?.tiene_maximo === true)) ? 'not-allowed' : 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: (!message.trim() || isTyping) 
+                    boxShadow: (!message.trim() || isTyping || (limiteInfo?.tiene_maximo === true)) 
                       ? '0 2px 8px rgba(149, 165, 166, 0.3)' 
                       : '0 4px 15px rgba(4, 120, 87, 0.3)',
                     minWidth: isMobile ? '44px' : '60px',
