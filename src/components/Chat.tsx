@@ -60,24 +60,15 @@ const Chat: React.FC = () => {
   // On mount: check auth and load user/chats
   useEffect(() => {
     if (isInitialized) {
-      console.log('⚠️ Componente ya inicializado, saltando...');
       return;
     }
     
-    console.log('🔄 INICIALIZANDO COMPONENTE CHAT');
     setIsInitialized(true);
     
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('currentUser');
-    const savedChatId = localStorage.getItem('currentChatId');
-    
-    console.log('🔍 Datos en localStorage:');
-    console.log('  - authToken:', !!token);
-    console.log('  - currentUser:', !!userData);
-    console.log('  - currentChatId:', savedChatId);
     
     if (!token) {
-      console.log('No hay token, redirigiendo al login');
       window.location.href = '/login';
       return;
     }
@@ -89,7 +80,6 @@ const Chat: React.FC = () => {
     if (savedLimiteInfo) {
       try {
         const parsedLimiteInfo = JSON.parse(savedLimiteInfo);
-        console.log('🔄 Restaurando información de límites:', parsedLimiteInfo);
         setLimiteInfo(parsedLimiteInfo);
       } catch (error) {
         console.error('Error al restaurar límiteInfo:', error);
@@ -100,11 +90,9 @@ const Chat: React.FC = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        console.log('Usuario cargado:', parsedUser);
         setUser(parsedUser);
       } catch (error) {
         console.error('Error al parsear datos del usuario:', error);
-        console.log('Datos de usuario raw:', userData);
         setUser({
           nombre: 'Usuario',
           apellido: '',
@@ -112,7 +100,6 @@ const Chat: React.FC = () => {
         });
       }
     } else {
-      console.warn('No hay datos de usuario en localStorage, usando valores por defecto');
       setUser({
         nombre: 'Usuario',
         apellido: '',
@@ -123,22 +110,17 @@ const Chat: React.FC = () => {
     // Fetch all chats inline
     const fetchChats = async () => {
       try {
-        console.log('📋 Cargando lista de chats...');
         const res = await Api.get('/chat');
-        console.log('📋 Chats recibidos:', res.data.chats?.length || 0);
         setChats(res.data.chats || []);
         
         // Check if there's a saved currentChatId in localStorage
         const savedChatId = localStorage.getItem('currentChatId');
         
         if (savedChatId && res.data.chats?.some((chat: { id: number }) => chat.id.toString() === savedChatId)) {
-          console.log('✅ Restaurando chat guardado:', savedChatId);
           loadChat(parseInt(savedChatId), token);
         } else if (res.data.chats && res.data.chats.length > 0) {
-          console.log('💬 Cargando primer chat disponible');
           loadChat(res.data.chats[0].id, token);
         } else {
-          console.log('🆕 No hay chats, creando nuevo');
           handleNewChat(token);
         }
       } catch (error) {
@@ -156,9 +138,7 @@ const Chat: React.FC = () => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
-      console.log('💬 Cargando chat:', chatId);
-      const res = await Api.get(`/chat/${chatId}?limit=100`);  // Solicitar hasta 100 mensajes
-      console.log('🔍 Respuesta completa del servidor:', res.data);
+      const res = await Api.get(`/chat/${chatId}?limit=100`);
       
       setCurrentChatId(chatId);
       localStorage.setItem('currentChatId', chatId.toString());
@@ -166,46 +146,15 @@ const Chat: React.FC = () => {
       const mensajes = res.data.chat.mensajes || [];
       const limiteData = res.data.chat.limite_info || null;
       
-      console.log('📨 Mensajes recibidos:', mensajes.length);
-      
-      // Guardar información del límite INMEDIATAMENTE
-      console.log('🔥 Estableciendo limiteInfo:', limiteData);
-      
-      // Establecer limiteInfo directamente
       setLimiteInfo(limiteData);
-      console.log('🔄 LimiteInfo establecido inmediatamente:', limiteData);
       
       if (limiteData) {
         localStorage.setItem('limiteInfo', JSON.stringify(limiteData));
-        console.log('💾 Guardado en localStorage:', limiteData);
-        if (limiteData.tiene_maximo) {
-          console.log('⚠️ LÍMITE ALCANZADO - Debe mostrarse mensaje:', limiteData);
-          console.log('📊 Estadísticas del límite:', {
-            total: limiteData.total_mensajes,
-            mostrados: limiteData.mensajes_mostrados,
-            ocultos: limiteData.mensajes_ocultos,
-            tieneMaximo: limiteData.tiene_maximo
-          });
-        }
       } else {
         localStorage.removeItem('limiteInfo');
-        console.log('🧹 Límite limpiado');
       }
       
-      if (mensajes.length > 0) {
-        console.log('📨 Primer mensaje:', { id: mensajes[0].id, rol: mensajes[0].rol, contenido: mensajes[0].contenido?.substring(0, 50) + '...' });
-        console.log('📨 Último mensaje:', { id: mensajes[mensajes.length-1].id, rol: mensajes[mensajes.length-1].rol, contenido: mensajes[mensajes.length-1].contenido?.substring(0, 50) + '...' });
-      }
-      
-      console.log('🔄 Estableciendo estado del chat...');
       setMessages(mensajes);
-      
-      // Verificación post-setMessages
-      setTimeout(() => {
-        console.log('🔍 Verificación post-setMessages:', { chatId, mensajesEnEstado: mensajes.length, primerMensajeId: mensajes[0]?.id });
-      }, 100);
-      
-      console.log('✅ Chat inicial cargado:', chatId, 'con', mensajes.length, 'mensajes');
     } catch (error) {
       console.error('Error loading chat:', error);
       setError('Error al cargar el chat');
@@ -217,12 +166,11 @@ const Chat: React.FC = () => {
     const token = tokenOverride || authToken;
     if (!token) return;
     try {
-      console.log('🆕 Creando nuevo chat...');
       const res = await Api.post('/chat', {});
       setCurrentChatId(res.data.chat.id);
       localStorage.setItem('currentChatId', res.data.chat.id.toString());
       
-      // Set welcome message immediately (no setTimeout)
+      // Set welcome message immediately
       setMessages([
         {
           id: Date.now(),

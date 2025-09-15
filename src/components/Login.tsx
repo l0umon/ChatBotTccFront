@@ -62,9 +62,7 @@ const Login = () => {
       // Guardar datos del usuario
       if (response.data.user) {
         localStorage.setItem('currentUser', JSON.stringify(response.data.user));
-        console.log('Datos de usuario guardados:', response.data.user);
       } else {
-        console.log('No se recibieron datos de usuario del servidor');
         // Guardar datos mínimos por defecto
         localStorage.setItem('currentUser', JSON.stringify({
           nombre: 'Usuario',
