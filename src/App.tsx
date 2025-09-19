@@ -5,6 +5,7 @@ import RegisterAdmin from './components/RegisterAdmin';
 import Chat from './components/Chat';
 import UserManagement from './components/UserManagement';
 import Dashboard from './components/Dashboard';
+import DocumentManagement from './components/DocumentManagement';
 import './App.css'; // Asumiendo que los estilos están en este archivo
 
 const App = () => {
@@ -19,6 +20,7 @@ const App = () => {
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/gestion-usuarios.html" element={<UserManagement />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/gestion-documentos" element={<DocumentManagement />} />
           <Route path="/" element={<Login />} /> {/* Redirige al login por defecto */}
         </Routes>
       </div>
