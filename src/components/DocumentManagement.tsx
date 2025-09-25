@@ -22,11 +22,8 @@ const categorias = [
 
 const roles = [
 	{ value: '', label: 'Selecciona el nivel de acceso' },
-	{ value: 'todos', label: 'Todos' },
 	{ value: 'estudiante', label: 'Estudiantes' },
-	{ value: 'docente', label: 'Docentes' },
 	{ value: 'personal', label: 'Personal' },
-	{ value: 'admin', label: 'Administradores' },
 ];
 
 const DocumentManagement: React.FC = () => {
@@ -88,6 +85,31 @@ const DocumentManagement: React.FC = () => {
 			tamaño: '1.8 MB'
 		}
 	]);
+
+	// Cargar documentos desde el backend
+	useEffect(() => {
+		const cargarDocumentos = async () => {
+			try {
+				const token = localStorage.getItem('authToken');
+				const res = await fetch('/api/documents?limit=100&offset=0', {
+					method: 'GET',
+					headers: {
+						...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+						'Content-Type': 'application/json'
+					}
+				});
+				const data = await res.json();
+				if (res.ok && Array.isArray(data.documentos)) {
+					setDocumentos(data.documentos);
+				} else {
+					console.error('Error al obtener documentos:', data);
+				}
+			} catch (err) {
+				console.error('Error al obtener documentos:', err);
+			}
+		};
+		cargarDocumentos();
+	}, [showUploadForm]);
 
 	const isMobile = window.innerWidth <= 768;
 
