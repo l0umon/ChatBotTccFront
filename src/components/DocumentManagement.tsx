@@ -118,7 +118,7 @@ const DocumentManagement: React.FC = () => {
 		if (!titulo || !categoria || !rolAcceso || !file) return;
 
 		const formData = new FormData();
-		formData.append('file', file);
+	formData.append('documento', file);
 		formData.append('titulo', titulo);
 		formData.append('descripcion', descripcion);
 		formData.append('categoria', categoria);
@@ -243,20 +243,23 @@ const DocumentManagement: React.FC = () => {
 		if (!window.confirm('¿Estás seguro de que quieres eliminar este documento?')) return;
 		try {
 			const token = localStorage.getItem('authToken');
-			// El backend espera el id y la colección (rolAcceso)
-			const res = await fetch(`/api/documents/${doc.id}?collection=${doc.rolAcceso}`, {
+			const res = await fetch(`/api/documents/${doc.id}`, {
 				method: 'DELETE',
-				headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+				headers: {
+					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+					'Content-Type': 'application/json'
+				}
 			});
 			const data = await res.json();
-			if (res.ok) {
+			if (data.success) {
 				setDocumentos(documentos.filter(d => d.id !== doc.id));
-				alert('Documento eliminado correctamente');
+				alert('Documento eliminado exitosamente');
 			} else {
-				alert('Error al eliminar el documento: ' + (data?.message || 'Error desconocido'));
+				alert('Error: ' + (data.error?.message || 'No se pudo eliminar'));
 			}
-		} catch (error) {
-			alert('Error de red al eliminar el documento: ' + (error instanceof Error ? error.message : ''));
+		} catch (err) {
+			alert('Error de red o servidor');
+			console.error(err);
 		}
 	};
 
