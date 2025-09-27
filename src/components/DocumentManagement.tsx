@@ -119,8 +119,8 @@ const DocumentManagement: React.FC = () => {
 
 		const formData = new FormData();
 	formData.append('documento', file);
-		formData.append('titulo', titulo);
-		formData.append('descripcion', descripcion);
+	formData.append('titulo', titulo);
+	formData.append('descripcion', descripcion);
 		formData.append('categoria', categoria);
 		formData.append('rol_acceso', rolAcceso);
 
@@ -717,7 +717,9 @@ const DocumentManagement: React.FC = () => {
 													borderRadius: '8px',
 													fontSize: '14px',
 													transition: 'border-color 0.3s ease',
-													outline: 'none'
+													outline: 'none',
+													backgroundColor: '#ffffff',
+													color: '#1f2937'
 												}}
 												onFocus={(e) => e.target.style.borderColor = '#047857'}
 												onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -740,7 +742,8 @@ const DocumentManagement: React.FC = () => {
 													fontSize: '14px',
 													transition: 'border-color 0.3s ease',
 													outline: 'none',
-													resize: 'vertical'
+													backgroundColor: '#ffffff',
+													color: '#1f2937'
 												}}
 												onFocus={(e) => e.target.style.borderColor = '#047857'}
 												onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -762,9 +765,9 @@ const DocumentManagement: React.FC = () => {
 														border: '2px solid #e5e7eb',
 														borderRadius: '8px',
 														fontSize: '14px',
-														backgroundColor: '#f3f4f6',
+														backgroundColor: '#ffffff',
 														appearance: 'none',
-														color: '#000',
+														color: '#1f2937',
 														outline: 'none',
 													}}
 												>
@@ -788,9 +791,9 @@ const DocumentManagement: React.FC = () => {
 														border: '2px solid #e5e7eb',
 														borderRadius: '8px',
 														fontSize: '14px',
-														backgroundColor: '#f3f4f6',
+														backgroundColor: '#ffffff',
 														appearance: 'none',
-														color: '#000',
+														color: '#1f2937',
 														outline: 'none',
 													}}
 												>
@@ -813,12 +816,12 @@ const DocumentManagement: React.FC = () => {
 												style={{
 													width: '100%',
 													padding: '12px 16px',
-													border: '2px dashed #d1d5db !important',
+													border: '2px solid #d1d5db',
 													borderRadius: '8px',
 													fontSize: '14px',
-													backgroundColor: '#e5e7eb !important',
-													color: '#111827 !important',
-													boxShadow: 'none !important'
+													backgroundColor: '#ffffff',
+													color: '#1f2937',
+													outline: 'none'
 												}}
 											/>
 										</div>
@@ -887,7 +890,7 @@ const DocumentManagement: React.FC = () => {
 									}} />
 									<input
 										type="text"
-										placeholder="Buscar documentos por nombre, email o ID..."
+										placeholder="Buscar documentos por nombre"
 										value={search}
 										onChange={e => setSearch(e.target.value)}
 										style={{
@@ -897,7 +900,9 @@ const DocumentManagement: React.FC = () => {
 											borderRadius: '12px',
 											fontSize: '14px',
 											outline: 'none',
-											transition: 'border-color 0.3s ease'
+											transition: 'border-color 0.3s ease',
+											backgroundColor: '#ffffff',
+											color: '#1f2937'
 										}}
 										onFocus={(e) => e.target.style.borderColor = '#047857'}
 										onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
