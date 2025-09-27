@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import {
+	BarChart3,
+	Users,
+	MessageSquare,
+	Shield,
+	ArrowRight,
+	GraduationCap
+} from 'lucide-react';
 
 interface Documento {
 	id: number;
@@ -284,17 +292,17 @@ const DocumentManagement: React.FC = () => {
 					minHeight: isMobile ? 'auto' : '76px',
 					height: isMobile ? 'auto' : '76px'
 				}}>
-					<div style={{
-						background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
-						borderRadius: isMobile ? '12px' : '16px',
-						padding: isMobile ? '8px' : '12px',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						boxShadow: '0 8px 32px rgba(4, 120, 87, 0.3)'
-					}}>
-						<i className="fas fa-graduation-cap" style={{ color: '#fff', fontSize: isMobile ? 20 : 28 }} />
-					</div>
+													<div style={{
+														background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+														borderRadius: isMobile ? '12px' : '16px',
+														padding: isMobile ? '8px' : '12px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														boxShadow: '0 8px 32px rgba(4, 120, 87, 0.3)'
+													}}>
+														<GraduationCap size={isMobile ? 20 : 28} color="#fff" />
+													</div>
 					<div>
 						<div style={{ 
 							fontWeight: '700', 
@@ -322,98 +330,98 @@ const DocumentManagement: React.FC = () => {
 							NAVEGACIÓN
 						</span>
 						<div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px' }}>
-							<button
-								style={{
-									background: 'rgba(255, 255, 255, 0.1)',
-									border: '1px solid rgba(255, 255, 255, 0.2)',
-									color: 'rgba(255, 255, 255, 0.8)',
-									padding: isMobile ? '12px 16px' : '14px 18px',
-									borderRadius: '12px',
-									display: 'flex',
-									alignItems: 'center',
-									gap: isMobile ? '10px' : '12px',
-									cursor: 'pointer',
-									fontSize: isMobile ? '13px' : '14px',
-									fontWeight: '500',
-									transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-									width: '100%',
-									textAlign: 'left',
-									backdropFilter: 'blur(10px)'
-								}}
-								onClick={() => window.location.href = '/admin/dashboard'}
-							>
-								<i className="fas fa-chart-pie" />
-								Dashboard
-							</button>
-							<button
-								style={{
-									background: 'rgba(255, 255, 255, 0.1)',
-									border: '1px solid rgba(255, 255, 255, 0.2)',
-									color: 'rgba(255, 255, 255, 0.8)',
-									padding: isMobile ? '12px 16px' : '14px 18px',
-									borderRadius: '12px',
-									display: 'flex',
-									alignItems: 'center',
-									gap: isMobile ? '10px' : '12px',
-									cursor: 'pointer',
-									fontSize: isMobile ? '13px' : '14px',
-									fontWeight: '500',
-									transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-									width: '100%',
-									textAlign: 'left',
-									backdropFilter: 'blur(10px)'
-								}}
-								onClick={() => window.location.href = '/admin/gestion-usuarios.html'}
-							>
-								<i className="fas fa-users" />
-								Gestión de Usuarios
-							</button>
-							<button
-								style={{
-									background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
-									border: '1px solid rgba(255, 255, 255, 0.2)',
-									color: '#ffffff',
-									padding: isMobile ? '12px 16px' : '14px 18px',
-									borderRadius: '12px',
-									display: 'flex',
-									alignItems: 'center',
-									gap: isMobile ? '10px' : '12px',
-									cursor: 'pointer',
-									fontSize: isMobile ? '13px' : '14px',
-									fontWeight: '600',
-									transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-									width: '100%',
-									textAlign: 'left',
-									boxShadow: '0 4px 20px rgba(4, 120, 87, 0.25)',
-									transform: 'translateY(0)'
-								}}
-							>
-								<i className="fas fa-file-alt" />
-								Gestión de Documentos
-							</button>
-							<button
-								style={{
-									background: 'rgba(255, 255, 255, 0.1)',
-									border: '1px solid rgba(255, 255, 255, 0.2)',
-									color: 'rgba(255, 255, 255, 0.8)',
-									padding: isMobile ? '12px 16px' : '14px 18px',
-									borderRadius: '12px',
-									display: 'flex',
-									alignItems: 'center',
-									gap: isMobile ? '10px' : '12px',
-									cursor: 'pointer',
-									fontSize: isMobile ? '13px' : '14px',
-									fontWeight: '500',
-									transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-									width: '100%',
-									textAlign: 'left',
-									backdropFilter: 'blur(10px)'
-								}}
-								onClick={() => window.location.href = '/chat'}
-							>
-								<i className="fas fa-comments" />
-								Chat
-							</button>
+								<button
+									style={{
+										background: 'rgba(255, 255, 255, 0.1)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										color: 'rgba(255, 255, 255, 0.8)',
+										padding: isMobile ? '12px 16px' : '14px 18px',
+										borderRadius: '12px',
+										display: 'flex',
+										alignItems: 'center',
+										gap: isMobile ? '10px' : '12px',
+										cursor: 'pointer',
+										fontSize: isMobile ? '13px' : '14px',
+										fontWeight: '500',
+										transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+										width: '100%',
+										textAlign: 'left',
+										backdropFilter: 'blur(10px)'
+									}}
+									onClick={() => window.location.href = '/admin/dashboard'}
+								>
+									<BarChart3 size={18} />
+									Dashboard
+								</button>
+								<button
+									style={{
+										background: 'rgba(255, 255, 255, 0.1)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										color: 'rgba(255, 255, 255, 0.8)',
+										padding: isMobile ? '12px 16px' : '14px 18px',
+										borderRadius: '12px',
+										display: 'flex',
+										alignItems: 'center',
+										gap: isMobile ? '10px' : '12px',
+										cursor: 'pointer',
+										fontSize: isMobile ? '13px' : '14px',
+										fontWeight: '500',
+										transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+										width: '100%',
+										textAlign: 'left',
+										backdropFilter: 'blur(10px)'
+									}}
+									onClick={() => window.location.href = '/admin/users'}
+								>
+									<Users size={18} />
+									Gestión de Usuarios
+								</button>
+								<button
+									style={{
+										background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										color: '#ffffff',
+										padding: isMobile ? '12px 16px' : '14px 18px',
+										borderRadius: '12px',
+										display: 'flex',
+										alignItems: 'center',
+										gap: isMobile ? '10px' : '12px',
+										cursor: 'pointer',
+										fontSize: isMobile ? '13px' : '14px',
+										fontWeight: '600',
+										transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+										width: '100%',
+										textAlign: 'left',
+										boxShadow: '0 4px 20px rgba(4, 120, 87, 0.25)',
+										transform: 'translateY(0)'
+									}}
+								>
+									<BarChart3 size={18} />
+									Gestión de Documentos
+								</button>
+											<button
+												style={{
+													background: 'rgba(255, 255, 255, 0.1)',
+													border: '1px solid rgba(255, 255, 255, 0.2)',
+													color: 'rgba(255, 255, 255, 0.8)',
+													padding: isMobile ? '12px 16px' : '14px 18px',
+													borderRadius: '12px',
+													display: 'flex',
+													alignItems: 'center',
+													gap: isMobile ? '10px' : '12px',
+													cursor: 'pointer',
+													fontSize: isMobile ? '13px' : '14px',
+													fontWeight: '500',
+													transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+													width: '100%',
+													textAlign: 'left',
+													backdropFilter: 'blur(10px)'
+												}}
+												onClick={() => window.location.href = '/chat'}
+											>
+												<MessageSquare size={18} />
+												Chat
+											</button>
 						</div>
 					</div>
 				</div>
@@ -442,7 +450,7 @@ const DocumentManagement: React.FC = () => {
 							alignItems: 'center',
 							justifyContent: 'center'
 						}}>
-							<i className="fas fa-user" style={{ color: '#fff', fontSize: isMobile ? 18 : 20 }} />
+							   <Shield size={isMobile ? 18 : 20} />
 						</div>
 						<div style={{ flex: 1, minWidth: 0 }}>
 							<div style={{ 
@@ -459,26 +467,26 @@ const DocumentManagement: React.FC = () => {
 							}}>Admin</div>
 						</div>
 					</div>
-					<button
-						style={{
-							background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-							border: 'none',
-							color: '#ffffff',
-							borderRadius: '8px',
-							padding: isMobile ? '8px' : '10px',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							transition: 'all 0.3s ease',
-							boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
-							width: isMobile ? '36px' : '40px',
-							height: isMobile ? '36px' : '40px',
-							flexShrink: 0
-						}}
-					>
-						<i className="fas fa-sign-out-alt" />
-					</button>
+									<button
+										style={{
+											background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+											border: 'none',
+											color: '#ffffff',
+											borderRadius: '8px',
+											padding: isMobile ? '8px' : '10px',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											cursor: 'pointer',
+											transition: 'all 0.3s ease',
+											boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+											width: isMobile ? '36px' : '40px',
+											height: isMobile ? '36px' : '40px',
+											flexShrink: 0
+										}}
+									>
+										<ArrowRight size={isMobile ? 16 : 18} />
+									</button>
 				</div>
 			</div>
 
@@ -535,7 +543,7 @@ const DocumentManagement: React.FC = () => {
 							<div style={{
 								background: '#ffffff',
 								borderRadius: '16px',
-								padding: '32px',
+								   padding: '32px 20px',
 								width: '100%',
 								maxWidth: '600px',
 								maxHeight: '90vh',
@@ -572,7 +580,7 @@ const DocumentManagement: React.FC = () => {
 												readOnly
 												style={{
 													width: '100%',
-													padding: '12px 16px',
+													   padding: '12px 6px',
 													border: '2px solid #e5e7eb',
 													borderRadius: '8px',
 													fontSize: '14px',
@@ -710,17 +718,19 @@ const DocumentManagement: React.FC = () => {
 												value={titulo}
 												onChange={e => setTitulo(e.target.value)}
 												required
-												style={{
-													width: '100%',
-													padding: '12px 16px',
-													border: '2px solid #e5e7eb',
-													borderRadius: '8px',
-													fontSize: '14px',
-													transition: 'border-color 0.3s ease',
-													outline: 'none',
-													backgroundColor: '#ffffff',
-													color: '#1f2937'
-												}}
+												   style={{
+													   width: 'calc(100% - 16px)',
+													   padding: '12px 6px',
+													   border: '2px solid #e5e7eb',
+													   borderRadius: '8px',
+													   fontSize: '14px',
+													   transition: 'border-color 0.3s ease',
+													   outline: 'none',
+													   backgroundColor: '#ffffff',
+													   color: '#1f2937',
+													   marginLeft: '8px',
+													   marginRight: '8px'
+												   }}
 												onFocus={(e) => e.target.style.borderColor = '#047857'}
 												onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
 											/>
@@ -734,17 +744,19 @@ const DocumentManagement: React.FC = () => {
 												value={descripcion}
 												onChange={e => setDescripcion(e.target.value)}
 												rows={3}
-												style={{
-													width: '100%',
-													padding: '12px 16px',
-													border: '2px solid #e5e7eb',
-													borderRadius: '8px',
-													fontSize: '14px',
-													transition: 'border-color 0.3s ease',
-													outline: 'none',
-													backgroundColor: '#ffffff',
-													color: '#1f2937'
-												}}
+												   style={{
+													   width: 'calc(100% - 16px)',
+													   padding: '12px 6px',
+													   border: '2px solid #e5e7eb',
+													   borderRadius: '8px',
+													   fontSize: '14px',
+													   transition: 'border-color 0.3s ease',
+													   outline: 'none',
+													   backgroundColor: '#ffffff',
+													   color: '#1f2937',
+													   marginLeft: '8px',
+													   marginRight: '8px'
+												   }}
 												onFocus={(e) => e.target.style.borderColor = '#047857'}
 												onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
 											/>
