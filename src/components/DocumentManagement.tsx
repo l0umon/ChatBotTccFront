@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-	BarChart3,
-	Users,
-	MessageSquare,
-	Shield,
-	ArrowRight,
-	GraduationCap
-} from 'lucide-react';
-
-interface Documento {
+  BarChart3,
+  Users,
+  MessageSquare,
+  Shield,
+  ArrowRight,
+  GraduationCap,
+  Eye,
+  Trash2
+} from 'lucide-react';interface Documento {
 	id: number;
 	titulo: string;
 	descripcion: string;
@@ -47,6 +47,40 @@ const DocumentManagement: React.FC = () => {
 	// Estado para ver documento
 	const [docActual, setDocActual] = useState<Documento | null>(null);
 	const [modoVista, setModoVista] = useState<'subir' | 'ver'>('subir');
+
+	// Estados para notificaciones y confirmación
+	const [notification, setNotification] = useState<{
+		show: boolean;
+		message: string;
+		type: 'success' | 'error' | 'info';
+	}>({ show: false, message: '', type: 'info' });
+	const [confirmDialog, setConfirmDialog] = useState<{
+		show: boolean;
+		message: string;
+		onConfirm: () => void;
+		onCancel: () => void;
+	}>({ show: false, message: '', onConfirm: () => {}, onCancel: () => {} });
+
+	// Función para mostrar notificaciones
+	const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+		setNotification({ show: true, message, type });
+		setTimeout(() => {
+			setNotification(prev => ({ ...prev, show: false }));
+		}, 4000);
+	};
+
+	// Función para mostrar diálogo de confirmación
+	const showConfirmDialog = (message: string, onConfirm: () => void) => {
+		setConfirmDialog({
+			show: true,
+			message,
+			onConfirm: () => {
+				setConfirmDialog(prev => ({ ...prev, show: false }));
+				onConfirm();
+			},
+			onCancel: () => setConfirmDialog(prev => ({ ...prev, show: false }))
+		});
+	};
 
 	// Función para forzar estilos via JavaScript
 	useEffect(() => {
@@ -161,13 +195,13 @@ const DocumentManagement: React.FC = () => {
 				setRolAcceso('');
 				setFile(null);
 				setShowUploadForm(false);
-				// Opcional: notificación de éxito
-				alert('Documento subido correctamente');
+				// Notificación de éxito
+				showNotification('Documento subido correctamente', 'success');
 			} else {
-				alert('Error al subir el documento: ' + (data?.message || 'Error desconocido'));
+				showNotification('Error al subir el documento: ' + (data?.message || 'Error desconocido'), 'error');
 			}
 		} catch (error) {
-			alert('Error de red al subir el documento: ' + (error instanceof Error ? error.message : ''));
+			showNotification('Error de red al subir el documento: ' + (error instanceof Error ? error.message : ''), 'error');
 		}
 	};
 
@@ -248,27 +282,31 @@ const DocumentManagement: React.FC = () => {
 
 	// Eliminar documento en backend y frontend
 	const eliminarDocumento = async (doc: Documento) => {
-		if (!window.confirm('¿Estás seguro de que quieres eliminar este documento?')) return;
-		try {
-			const token = localStorage.getItem('authToken');
-			const res = await fetch(`/api/documents/${doc.id}`, {
-				method: 'DELETE',
-				headers: {
-					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-					'Content-Type': 'application/json'
+		showConfirmDialog(
+			`¿Estás seguro de que quieres eliminar el documento "${doc.titulo}"?`,
+			async () => {
+			try {
+				const token = localStorage.getItem('authToken');
+				const res = await fetch(`/api/documents/${doc.id}`, {
+					method: 'DELETE',
+					headers: {
+						...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+						'Content-Type': 'application/json'
+					}
+				});
+				const data = await res.json();
+				if (data.success) {
+					setDocumentos(documentos.filter(d => d.id !== doc.id));
+					showNotification('Documento eliminado exitosamente', 'success');
+				} else {
+					showNotification('Error: ' + (data.error?.message || 'No se pudo eliminar'), 'error');
 				}
-			});
-			const data = await res.json();
-			if (data.success) {
-				setDocumentos(documentos.filter(d => d.id !== doc.id));
-				alert('Documento eliminado exitosamente');
-			} else {
-				alert('Error: ' + (data.error?.message || 'No se pudo eliminar'));
+			} catch (err) {
+				showNotification('Error de red o servidor', 'error');
+				console.error(err);
 			}
-		} catch (err) {
-			alert('Error de red o servidor');
-			console.error(err);
 		}
+		);
 	};
 
 	// Abrir modal en modo ver
@@ -1153,59 +1191,84 @@ const DocumentManagement: React.FC = () => {
 												</div>
 
 												{/* Acciones */}
-												<div style={{ display: 'flex', gap: '8px' }}>
+												<div style={{ 
+													display: 'flex', 
+													gap: isMobile ? '3px' : '6px',
+													alignItems: 'center',
+													justifyContent: isMobile ? 'center' : 'flex-start'
+												}}>
+													{/* Botón Ver */}
 													<button
-														style={{
-															background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-															border: 'none',
-															color: '#ffffff',
-															padding: '8px',
-															borderRadius: '6px',
-															cursor: 'pointer',
-															transition: 'all 0.3s ease',
-															display: 'flex',
-															alignItems: 'center',
-															justifyContent: 'center'
-														}}
-														title="Descargar"
-													>
-														<i className="fas fa-download" style={{ fontSize: '12px' }} />
-													</button>
-													<button
-														style={{
-															background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-															border: 'none',
-															color: '#ffffff',
-															padding: '8px',
-															borderRadius: '6px',
-															cursor: 'pointer',
-															transition: 'all 0.3s ease',
-															display: 'flex',
-															alignItems: 'center',
-															justifyContent: 'center'
-														}}
-														title="Ver"
 														onClick={() => handleVerDocumento(doc)}
+														style={{
+															background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+															border: 'none',
+															color: '#ffffff',
+															borderRadius: '6px',
+															padding: isMobile ? '6px 8px' : '8px 12px',
+															display: 'flex',
+															alignItems: 'center',
+															gap: '4px',
+															cursor: 'pointer',
+															transition: 'all 0.3s ease',
+															fontSize: isMobile ? '10px' : '12px',
+															fontWeight: '600',
+															boxShadow: '0 1px 4px rgba(6, 182, 212, 0.3)',
+															minWidth: isMobile ? '60px' : '80px',
+															height: isMobile ? '32px' : '36px',
+															justifyContent: 'center'
+														}}
+														onMouseEnter={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)';
+															e.currentTarget.style.transform = 'translateY(-1px)';
+															e.currentTarget.style.boxShadow = '0 2px 8px rgba(6, 182, 212, 0.4)';
+														}}
+														onMouseLeave={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)';
+															e.currentTarget.style.transform = 'translateY(0)';
+															e.currentTarget.style.boxShadow = '0 1px 4px rgba(6, 182, 212, 0.3)';
+														}}
+														title="Ver documento"
 													>
-														<i className="fas fa-eye" style={{ fontSize: '12px' }} />
+														<Eye size={12} />
+														{!isMobile && 'Ver'}
 													</button>
+
+													{/* Botón Eliminar */}
 													<button
+														onClick={() => eliminarDocumento(doc)}
 														style={{
 															background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
 															border: 'none',
 															color: '#ffffff',
-															padding: '8px',
 															borderRadius: '6px',
-															cursor: 'pointer',
-															transition: 'all 0.3s ease',
+															padding: isMobile ? '6px 8px' : '8px 12px',
 															display: 'flex',
 															alignItems: 'center',
+															gap: '4px',
+															cursor: 'pointer',
+															transition: 'all 0.3s ease',
+															fontSize: isMobile ? '10px' : '12px',
+															fontWeight: '600',
+															boxShadow: '0 1px 4px rgba(239, 68, 68, 0.3)',
+															minWidth: isMobile ? '60px' : '80px',
+															height: isMobile ? '32px' : '36px',
 															justifyContent: 'center'
 														}}
-														title="Eliminar"
-														onClick={() => eliminarDocumento(doc)}
+														onMouseEnter={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+															e.currentTarget.style.transform = 'translateY(-1px)';
+															e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.4)';
+														}}
+														onMouseLeave={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+															e.currentTarget.style.transform = 'translateY(0)';
+															e.currentTarget.style.boxShadow = '0 1px 4px rgba(239, 68, 68, 0.3)';
+														}}
+														title="Eliminar documento"
 													>
-														<i className="fas fa-trash" style={{ fontSize: '12px' }} />
+														<Trash2 size={12} />
+														{!isMobile && 'Eliminar'}
 													</button>
 												</div>
 											</>
@@ -1220,8 +1283,9 @@ const DocumentManagement: React.FC = () => {
 												justifyContent: 'flex-end'
 											}}>
 												<button
+													onClick={() => handleVerDocumento(doc)}
 													style={{
-														background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+														background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
 														border: 'none',
 														color: '#ffffff',
 														padding: '8px 12px',
@@ -1230,11 +1294,12 @@ const DocumentManagement: React.FC = () => {
 														fontSize: '12px',
 														display: 'flex',
 														alignItems: 'center',
-														gap: '4px'
+														gap: '4px',
+														fontWeight: '600'
 													}}
 												>
-													<i className="fas fa-download" />
-													Descargar
+													<Eye size={14} />
+													Ver
 												</button>
 												<button
 													style={{
@@ -1247,11 +1312,12 @@ const DocumentManagement: React.FC = () => {
 														fontSize: '12px',
 														display: 'flex',
 														alignItems: 'center',
-														gap: '4px'
+														gap: '4px',
+														fontWeight: '600'
 													}}
 													onClick={() => eliminarDocumento(doc)}
 												>
-													<i className="fas fa-trash" />
+													<Trash2 size={14} />
 													Eliminar
 												</button>
 											</div>
@@ -1279,6 +1345,165 @@ const DocumentManagement: React.FC = () => {
 					)}
 				</div>
 			</div>
+
+			{/* Modal de Confirmación */}
+			{confirmDialog.show && (
+				<div style={{
+					position: 'fixed' as const,
+					top: 0,
+					left: 0,
+					right: 0,
+					bottom: 0,
+					background: 'rgba(0, 0, 0, 0.5)',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					zIndex: 10000,
+					padding: '20px'
+				}}>
+					<div style={{
+						background: '#ffffff',
+						borderRadius: '16px',
+						padding: '32px',
+						width: '100%',
+						maxWidth: '480px',
+						boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+						textAlign: 'center' as const
+					}}>
+						<div style={{
+							marginBottom: '24px',
+							display: 'flex',
+							justifyContent: 'center'
+						}}>
+							<div style={{
+								width: '64px',
+								height: '64px',
+								borderRadius: '50%',
+								background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center'
+							}}>
+								<Trash2 size={28} color="#ef4444" />
+							</div>
+						</div>
+						<h3 style={{
+							margin: '0 0 16px 0',
+							fontSize: '20px',
+							fontWeight: '700',
+							color: '#1f2937'
+						}}>
+							Confirmar eliminación
+						</h3>
+						<p style={{
+							margin: '0 0 32px 0',
+							fontSize: '16px',
+							color: '#6b7280',
+							lineHeight: '1.5'
+						}}>
+							{confirmDialog.message}
+						</p>
+						<div style={{
+							display: 'flex',
+							gap: '12px',
+							justifyContent: 'center'
+						}}>
+							<button
+								onClick={confirmDialog.onCancel}
+								style={{
+									background: '#f8f9fa',
+									border: 'none',
+									color: '#6c757d',
+									padding: '12px 24px',
+									borderRadius: '8px',
+									cursor: 'pointer',
+									fontSize: '14px',
+									fontWeight: '600',
+									transition: 'all 0.3s ease'
+								}}
+							>
+								Cancelar
+							</button>
+							<button
+								onClick={confirmDialog.onConfirm}
+								style={{
+									background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+									border: 'none',
+									color: '#ffffff',
+									padding: '12px 24px',
+									borderRadius: '8px',
+									cursor: 'pointer',
+									fontSize: '14px',
+									fontWeight: '600',
+									transition: 'all 0.3s ease'
+								}}
+							>
+								Eliminar
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Notificación Toast */}
+			{notification.show && (
+				<div style={{
+					position: 'fixed' as const,
+					top: '20px',
+					right: '20px',
+					background: notification.type === 'success' 
+						? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+						: notification.type === 'error'
+						? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+						: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+					color: '#ffffff',
+					padding: isMobile ? '16px 20px' : '18px 24px',
+					borderRadius: '12px',
+					boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+					zIndex: 10000,
+					maxWidth: isMobile ? '280px' : '400px',
+					fontSize: isMobile ? '14px' : '15px',
+					fontWeight: '600',
+					display: 'flex',
+					alignItems: 'center',
+					gap: '12px',
+					backdropFilter: 'blur(10px)',
+					border: '1px solid rgba(255, 255, 255, 0.2)',
+					animation: 'slideInRight 0.3s ease-out'
+				}}>
+					<div style={{
+						width: '20px',
+						height: '20px',
+						borderRadius: '50%',
+						background: 'rgba(255, 255, 255, 0.3)',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						flexShrink: 0
+					}}>
+						{notification.type === 'success' && '✓'}
+						{notification.type === 'error' && '✕'}
+						{notification.type === 'info' && 'ℹ'}
+					</div>
+					<span style={{ lineHeight: '1.4' }}>{notification.message}</span>
+				</div>
+			)}
+
+			{/* CSS para animaciones */}
+			<style>
+				{`
+					@keyframes slideInRight {
+						from {
+							opacity: 0;
+							transform: translateX(100%);
+						}
+						to {
+							opacity: 1;
+							transform: translateX(0);
+						}
+					}
+				`}
+			</style>
 		</div>
 	);
 };
