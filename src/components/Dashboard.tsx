@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, GraduationCap, Shield, User, BarChart3, MessageSquare, ArrowRight } from 'lucide-react';
+import { Users, GraduationCap, Shield, User, BarChart3, MessageSquare, ArrowRight, Ticket } from 'lucide-react';
 
 interface DashboardStats {
   total: number;
@@ -368,6 +368,40 @@ const Dashboard: React.FC = () => {
               >
                 <BarChart3 size={18} />
                 Gestión de Documentos
+              </button>
+
+              <button
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  padding: isMobile ? '12px 16px' : '14px 18px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isMobile ? '10px' : '12px',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '13px' : '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  width: '100%',
+                  textAlign: 'left' as const,
+                  backdropFilter: 'blur(10px)'
+                }}
+                onClick={() => window.location.href = '/admin/tickets'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                <Ticket size={18} />
+                Gestión de Tickets
               </button>
 
               <button

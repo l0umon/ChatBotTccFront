@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Endpoints</title>
+</head>
+<body>
+    <h1>API Endpoint Tester</h1>
+    <button onclick="testEndpoint('/admin/tickets')">/admin/tickets</button>
+    <button onclick="testEndpoint('/tickets')">/tickets</button>
+    <button onclick="testEndpoint('/tickets/all-tickets')">/tickets/all-tickets</button>
+    <button onclick="testEndpoint('/admin/dashboard-stats')">/admin/dashboard-stats</button>
+    <br><br>
+    <div id="results"></div>
+
+    <script>
+        async function testEndpoint(endpoint) {
+            const token = localStorage.getItem('authToken');
+            const results = document.getElementById('results');
+            
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                results.innerHTML += `<h3>${endpoint}</h3>`;
+                results.innerHTML += `<p>Status: ${response.status}</p>`;
+                results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                results.innerHTML += '<hr>';
+                
+            } catch (error) {
+                results.innerHTML += `<h3>${endpoint}</h3>`;
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
+                results.innerHTML += '<hr>';
+            }
+        }
+    </script>
+</body>
+</html>

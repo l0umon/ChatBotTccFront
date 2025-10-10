@@ -6,6 +6,8 @@ import Chat from './components/Chat';
 import UserManagement from './components/UserManagement';
 import Dashboard from './components/Dashboard';
 import DocumentManagement from './components/DocumentManagement';
+import TicketManagement from './components/TicketManagement';
+import MyTickets from './components/MyTickets';
 import './App.css'; // Asumiendo que los estilos están en este archivo
 
 const App = () => {
@@ -21,6 +23,9 @@ const App = () => {
           <Route path="/admin/gestion-usuarios.html" element={<UserManagement />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/gestion-documentos" element={<DocumentManagement />} />
+          <Route path="/admin/tickets" element={<TicketManagement />} />
+          <Route path="/admin/gestion-tickets" element={<TicketManagement />} />
+          <Route path="/mis-tickets" element={<MyTickets />} />
           <Route path="/" element={<Login />} /> {/* Redirige al login por defecto */}
         </Routes>
       </div>
