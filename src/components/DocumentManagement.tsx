@@ -7,6 +7,7 @@ import {
   ArrowRight,
   GraduationCap,
   Eye,
+  Edit2,
   Trash2
 } from 'lucide-react';interface Documento {
 	id: number;
@@ -46,7 +47,11 @@ const DocumentManagement: React.FC = () => {
 
 	// Estado para ver documento
 	const [docActual, setDocActual] = useState<Documento | null>(null);
-	const [modoVista, setModoVista] = useState<'subir' | 'ver'>('subir');
+	const [modoVista, setModoVista] = useState<'subir' | 'ver' | 'editar'>('subir');
+	
+	// Estado para edición
+	const [documentoEditando, setDocumentoEditando] = useState<Documento | null>(null);
+	const [isEditing, setIsEditing] = useState(false);
 
 	// Estados para notificaciones y confirmación
 	const [notification, setNotification] = useState<{
@@ -141,8 +146,37 @@ const DocumentManagement: React.FC = () => {
 					}
 				});
 				const data = await res.json();
-				if (res.ok && Array.isArray(data.documentos)) {
-					setDocumentos(data.documentos);
+				console.log('📄 Respuesta completa de documentos:', data);
+				
+				if (res.ok && data.documentos && Array.isArray(data.documentos)) {
+					console.log('📋 Documentos recibidos:', data.documentos);
+					if (data.documentos.length > 0) {
+						console.log('🔍 Estructura del primer documento:', JSON.stringify(data.documentos[0], null, 2));
+					}
+					
+					// Mapear los datos del backend a la estructura esperada
+					const documentosMapeados = data.documentos.map((doc: Record<string, unknown>) => {
+						console.log('🔍 Mapeando documento individual:', doc);
+						console.log('📝 Descripción original:', doc.descripcion, doc.description);
+						console.log('🔐 Rol acceso original:', doc.rol_acceso, doc.roleAccess, doc.rolAcceso);
+						
+						const mapped = {
+							id: doc.id,
+							titulo: doc.titulo || doc.title || 'Sin título',
+							descripcion: doc.descripcion || doc.description || 'Sin descripción disponible',
+							categoria: doc.categoria || doc.category || 'otro',
+							rolAcceso: doc.rol_acceso || doc.roleAccess || doc.rolAcceso || 'estudiante',
+							fileName: doc.nombre_archivo || doc.filename || doc.fileName || 'documento.pdf',
+							fechaSubida: doc.fecha_creacion || doc.createdAt || doc.fechaSubida || new Date().toISOString().split('T')[0],
+							tamaño: doc.tamaño || doc.size || '0 KB'
+						};
+						
+						console.log('✅ Documento mapeado:', mapped);
+						return mapped;
+					});
+					
+					console.log('✅ Documentos mapeados:', documentosMapeados);
+					setDocumentos(documentosMapeados);
 				} else {
 					console.error('Error al obtener documentos:', data);
 				}
@@ -205,10 +239,109 @@ const DocumentManagement: React.FC = () => {
 		}
 	};
 
-	const filteredDocs = documentos.filter(doc =>
-		(filterCategoria ? doc.categoria === filterCategoria : true) &&
-		(search ? doc.titulo.toLowerCase().includes(search.toLowerCase()) : true)
-	);
+	// Función para actualizar un documento existente
+	const handleUpdateDocument = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!documentoEditando || !titulo || !categoria || !rolAcceso) return;
+
+		try {
+			const token = localStorage.getItem('authToken');
+			const updateData = {
+				titulo,
+				descripcion,
+				categoria,
+				rol_acceso: rolAcceso
+			};
+
+			const res = await fetch(`/api/documents/${documentoEditando.id}`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					...(token ? { 'Authorization': `Bearer ${token}` } : {})
+				},
+				body: JSON.stringify(updateData)
+			});
+
+			const data = await res.json();
+			
+			if (res.ok) {
+				// Actualizar el documento en la lista local
+				setDocumentos(prevDocs => 
+					prevDocs.map(doc => 
+						doc.id === documentoEditando.id 
+							? { ...doc, titulo, descripcion, categoria, rolAcceso }
+							: doc
+					)
+				);
+				
+				// Limpiar estado de edición
+				setDocumentoEditando(null);
+				setIsEditing(false);
+				setModoVista('subir');
+				setTitulo('');
+				setDescripcion('');
+				setCategoria('');
+				setRolAcceso('');
+				
+				showNotification('Documento actualizado correctamente', 'success');
+			} else {
+				showNotification('Error al actualizar el documento: ' + (data?.message || 'Error desconocido'), 'error');
+			}
+		} catch (error) {
+			showNotification('Error de red al actualizar el documento: ' + (error instanceof Error ? error.message : ''), 'error');
+		}
+	};
+
+	// Función para iniciar edición de documento
+	const startEditDocument = (documento: Documento) => {
+		console.log('✏️ Iniciando edición de documento:', documento);
+		console.log('📝 Descripción del documento:', documento.descripcion);
+		console.log('🔐 Rol de acceso:', documento.rolAcceso);
+		
+		setDocumentoEditando(documento);
+		setTitulo(documento.titulo);
+		// Si la descripción es "Sin descripción disponible", limpiarla para edición
+		setDescripcion(documento.descripcion === 'Sin descripción disponible' ? '' : documento.descripcion);
+		setCategoria(documento.categoria);
+		setRolAcceso(documento.rolAcceso);
+		setIsEditing(true);
+		setModoVista('editar');
+		setShowUploadForm(true);
+	};
+
+	// Función para cancelar edición
+	const cancelEdit = () => {
+		setDocumentoEditando(null);
+		setIsEditing(false);
+		setModoVista('subir');
+		setTitulo('');
+		setDescripcion('');
+		setCategoria('');
+		setRolAcceso('');
+		setFile(null);
+		setShowUploadForm(false);
+	};
+
+	const filteredDocs = documentos.filter(doc => {
+		// Filtro por categoría
+		const matchesCategory = filterCategoria ? doc.categoria === filterCategoria : true;
+		
+		// Filtro de búsqueda mejorado: busca en título, descripción y autor
+		let matchesSearch = true;
+		if (search) {
+			const searchTerm = search.toLowerCase();
+			const titulo = doc.titulo?.toLowerCase() || '';
+			const descripcion = doc.descripcion?.toLowerCase() || '';
+			// Asumiendo que el autor estará disponible cuando el backend lo provea
+			const autor = ''; // doc.autor?.toLowerCase() || '';
+			
+			matchesSearch = titulo.includes(searchTerm) || 
+			               descripcion.includes(searchTerm) || 
+			               autor.includes(searchTerm);
+		}
+		
+		return matchesCategory && matchesSearch;
+	});
 
 	const getCategoriaLabel = (value: string) => {
 		return categorias.find(cat => cat.value === value)?.label || value;
@@ -590,10 +723,20 @@ const DocumentManagement: React.FC = () => {
 							}}>
 								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
 									<h2 style={{ margin: 0, color: '#047857', fontSize: '24px', fontWeight: '700' }}>
-										{modoVista === 'ver' ? 'Ver Documento' : 'Subir Nuevo Documento'}
+										{modoVista === 'ver' ? 'Ver Documento' : 
+										 modoVista === 'editar' ? 'Editar Documento' : 
+										 'Subir Nuevo Documento'}
 									</h2>
 									<button
-										onClick={() => { setShowUploadForm(false); setDocActual(null); setModoVista('subir'); }}
+										onClick={() => { 
+											if (isEditing) {
+												cancelEdit();
+											} else {
+												setShowUploadForm(false); 
+												setDocActual(null); 
+												setModoVista('subir');
+											}
+										}}
 										style={{
 											background: 'none',
 											border: 'none',
@@ -746,7 +889,7 @@ const DocumentManagement: React.FC = () => {
 										</div>
 									</div>
 								) : (
-									<form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+									<form onSubmit={isEditing ? handleUpdateDocument : handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 										<div>
 											<label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
 												Título del Documento *
@@ -854,32 +997,50 @@ const DocumentManagement: React.FC = () => {
 											</div>
 										</div>
 
-										<div>
-											<label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
-												Archivo (PDF) *
-											</label>
-											<input
-												type="file"
-												accept=".pdf"
-												onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
-												required
-												style={{
-													width: '100%',
-													padding: '12px 16px',
-													border: '2px solid #d1d5db',
-													borderRadius: '8px',
-													fontSize: '14px',
-													backgroundColor: '#ffffff',
-													color: '#1f2937',
-													outline: 'none'
-												}}
-											/>
-										</div>
+										{!isEditing && (
+											<div>
+												<label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+													Archivo (PDF) *
+												</label>
+												<input
+													type="file"
+													accept=".pdf"
+													onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
+													required
+													style={{
+														width: '100%',
+														padding: '12px 16px',
+														border: '2px solid #d1d5db',
+														borderRadius: '8px',
+														fontSize: '14px',
+														backgroundColor: '#ffffff',
+														color: '#1f2937',
+														outline: 'none'
+													}}
+												/>
+											</div>
+										)}
+
+										{isEditing && (
+											<div style={{
+												padding: '12px',
+												background: '#f3f4f6',
+												borderRadius: '8px',
+												border: '1px solid #d1d5db'
+											}}>
+												<p style={{ margin: 0, fontSize: '14px', color: '#374151' }}>
+													📄 <strong>Archivo actual:</strong> {documentoEditando?.fileName}
+												</p>
+												<p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+													Solo puedes actualizar el título, descripción, categoría y nivel de acceso.
+												</p>
+											</div>
+										)}
 
 										<div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
 											<button
 												type="button"
-												onClick={() => setShowUploadForm(false)}
+												onClick={() => isEditing ? cancelEdit() : setShowUploadForm(false)}
 												style={{
 													padding: '12px 24px',
 													border: '2px solid #d1d5db',
@@ -909,8 +1070,8 @@ const DocumentManagement: React.FC = () => {
 													gap: '8px'
 												}}
 											>
-												<i className="fas fa-upload" />
-												Subir Documento
+												<i className={isEditing ? "fas fa-save" : "fas fa-upload"} />
+												{isEditing ? 'Guardar Cambios' : 'Subir Documento'}
 											</button>
 										</div>
 									</form>
@@ -940,7 +1101,7 @@ const DocumentManagement: React.FC = () => {
 									}} />
 									<input
 										type="text"
-										placeholder="Buscar documentos por nombre"
+										placeholder="Buscar por título, descripción o autor..."
 										value={search}
 										onChange={e => setSearch(e.target.value)}
 										style={{
@@ -1234,6 +1395,43 @@ const DocumentManagement: React.FC = () => {
 														{!isMobile && 'Ver'}
 													</button>
 
+													{/* Botón Editar */}
+													<button
+														onClick={() => startEditDocument(doc)}
+														style={{
+															background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+															border: 'none',
+															color: '#ffffff',
+															borderRadius: '6px',
+															padding: isMobile ? '6px 8px' : '8px 12px',
+															display: 'flex',
+															alignItems: 'center',
+															gap: '4px',
+															cursor: 'pointer',
+															fontSize: '12px',
+															fontWeight: '500',
+															transition: 'all 0.2s ease',
+															boxShadow: '0 1px 4px rgba(245, 158, 11, 0.3)',
+															minWidth: 'fit-content',
+															height: isMobile ? '32px' : '36px',
+															justifyContent: 'center'
+														}}
+														onMouseEnter={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
+															e.currentTarget.style.transform = 'translateY(-1px)';
+															e.currentTarget.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.4)';
+														}}
+														onMouseLeave={(e) => {
+															e.currentTarget.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+															e.currentTarget.style.transform = 'translateY(0)';
+															e.currentTarget.style.boxShadow = '0 1px 4px rgba(245, 158, 11, 0.3)';
+														}}
+														title="Editar documento"
+													>
+														<Edit2 size={12} />
+														{!isMobile && 'Editar'}
+													</button>
+
 													{/* Botón Eliminar */}
 													<button
 														onClick={() => eliminarDocumento(doc)}
@@ -1300,6 +1498,25 @@ const DocumentManagement: React.FC = () => {
 												>
 													<Eye size={14} />
 													Ver
+												</button>
+												<button
+													onClick={() => startEditDocument(doc)}
+													style={{
+														background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+														border: 'none',
+														color: '#ffffff',
+														padding: '8px 12px',
+														borderRadius: '6px',
+														cursor: 'pointer',
+														fontSize: '12px',
+														display: 'flex',
+														alignItems: 'center',
+														gap: '4px',
+														fontWeight: '600'
+													}}
+												>
+													<Edit2 size={14} />
+													Editar
 												</button>
 												<button
 													style={{

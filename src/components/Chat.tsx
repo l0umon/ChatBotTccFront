@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Api from './Api';
-import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search } from 'lucide-react';
+import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface UserType {
   nombre: string;
@@ -19,6 +19,7 @@ interface MessageType {
   id: number;
   rol: 'usuario' | 'asistente';
   contenido: string;
+  documentos_descargables?: DocumentoDescargable[];
 }
 
 interface TicketType {
@@ -39,12 +40,131 @@ interface TicketType {
   };
 }
 
+interface DocumentoDescargable {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  nombre_archivo: string;
+  tipo_archivo: string;
+  tamaño_archivo: string;
+  url_descarga: string;
+  fuente_original?: string;
+  similitud_fuente?: number;
+}
+
 const Chat: React.FC = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [chats, setChats] = useState<ChatType[]>([]);
   const [currentChatId, setCurrentChatId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageType[]>([]);
+  const [expandedDocuments, setExpandedDocuments] = useState<Set<number>>(new Set());
+
+  const toggleDocuments = (messageId: number) => {
+    setExpandedDocuments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
+  const descargarDocumento = async (documentoId: number, nombreArchivo: string, fuenteOriginal?: string) => {
+    try {
+      console.log(`📥 Descargando documento ${documentoId}...`);
+      
+      // Si hay fuente original, intentar buscar el documento real por nombre
+      if (fuenteOriginal) {
+        try {
+          console.log(`🔍 Buscando documento por fuente: ${fuenteOriginal}`);
+          // Intentar obtener lista de documentos y buscar coincidencia
+          const docsResponse = await Api.get('/documents?limit=100&offset=0');
+          const documentos = docsResponse.data.documentos || [];
+          
+          // Buscar documento que coincida con la fuente
+          const docEncontrado = documentos.find((doc: Record<string, unknown>) => {
+            const tituloLimpio = (doc.titulo as string)?.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const fuenteLimpia = fuenteOriginal.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return tituloLimpio === fuenteLimpia || 
+                   tituloLimpio?.includes(fuenteLimpia.replace(/\d+$/, '')) ||
+                   (doc.nombre_archivo as string)?.toLowerCase().includes(fuenteLimpia.replace(/\d+$/, ''));
+          });
+          
+          if (docEncontrado) {
+            console.log(`✅ Documento encontrado en BD:`, docEncontrado);
+            // Usar el ID real del documento encontrado
+            documentoId = docEncontrado.id;
+            nombreArchivo = docEncontrado.nombre_archivo || nombreArchivo;
+          }
+        } catch (searchError) {
+          console.log(`⚠️ No se pudo buscar en BD, usando ID original`);
+        }
+      }
+      
+      // Probar diferentes endpoints posibles
+      let response;
+      const endpoints = [
+        `/documents/${documentoId}/download`,
+        `/documents/download/${documentoId}`,
+        `/documentos/${documentoId}/download`,
+        `/documentos/download/${documentoId}`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          response = await Api.get(endpoint, { responseType: 'blob' });
+          console.log(`✅ Endpoint funcionando: ${endpoint}`);
+          break;
+        } catch (endpointError) {
+          console.log(`❌ Endpoint ${endpoint} no funciona, probando siguiente...`);
+          continue;
+        }
+      }
+      
+      if (!response) {
+        throw new Error('No se encontró un endpoint válido para la descarga');
+      }
+
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nombreArchivo || `documento_${documentoId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`✅ Descarga completada: ${nombreArchivo}`);
+      
+    } catch (error) {
+      console.error('❌ Error descargando:', error);
+      
+      // Fallback: mostrar información del documento en lugar de descargar
+      alert(`📄 Documento: ${nombreArchivo}\n\n${fuenteOriginal ? `🔍 Fuente: ${fuenteOriginal}\n` : ''}ID: ${documentoId}\n\n📚 Este documento está disponible en el sistema pero no se pudo descargar automáticamente.\n\n💡 Posibles soluciones:\n• Contacta al administrador del sistema\n• Verifica que tengas permisos de descarga\n• El archivo podría no estar disponible temporalmente\n\n❌ Error técnico: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  };
+
+  const formatearTamañoArchivo = (bytes: string | number): string => {
+    if (!bytes || bytes === '0' || bytes === 0) return 'N/A';
+    const bytesNum = typeof bytes === 'string' ? parseInt(bytes) : bytes;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytesNum) / Math.log(1024));
+    return Math.round(bytesNum / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const obtenerTipoArchivo = (mimeType: string): string => {
+    const tipos: Record<string, string> = {
+      'application/pdf': 'PDF',
+      'application/msword': 'DOC',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+      'text/plain': 'TXT'
+    };
+    return tipos[mimeType] || 'DOC';
+  };
   const [message, setMessage] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [error, setError] = useState('');
@@ -252,11 +372,76 @@ const Chat: React.FC = () => {
       const res = await Api.post(`/chat/${currentChatId}/messages`, { mensaje: userMsg.contenido });
       
       setIsTyping(false);
+      
+      // Sistema híbrido: nuevo formato + fallback a formato antiguo
+      const contenidoCompleto = res.data.mensaje_asistente?.contenido || 'Sin respuesta';
+      let documentos = res.data.documentos_descargables || [];
+      const fuentesConsultadas = res.data.fuentes_consultadas || [];
+      
+      // Debug: mostrar estructura completa de la respuesta
+      console.log('🔍 Respuesta completa del backend:', res.data);
+      console.log('📄 Documentos descargables:', documentos);
+      
+      // Si no hay documentos en formato nuevo, parsear formato antiguo
+      let contenidoLimpio = contenidoCompleto;
+      if (documentos.length === 0) {
+        // Detectar fuentes en el texto - múltiples formatos posibles:
+        // Formato 1: "Fuente: Nombre_Documento_0"
+        // Formato 2: "en el "Nombre_Documento_0""
+        // Formato 3: "según el "Nombre_Documento_0""
+        let fuenteMatch = contenidoCompleto.match(/Fuente:\s*([^\s]+)/);
+        
+        if (!fuenteMatch) {
+          // Intentar formato con comillas: "en el "Documento_0"" o "según el "Documento_0""
+          fuenteMatch = contenidoCompleto.match(/(?:en el|según el|del|de la)\s*"([^"]+)"/);
+        }
+        
+        if (!fuenteMatch) {
+          // Intentar formato general con comillas: "Documento_0"
+          fuenteMatch = contenidoCompleto.match(/"([A-Za-z_]+_\d+)"/);
+        }
+        
+        if (fuenteMatch && fuenteMatch[1]) {
+          const nombreFuente = fuenteMatch[1].trim();
+          console.log('🔍 Fuente detectada:', nombreFuente);
+          
+          // Limpiar contenido removiendo referencias a la fuente
+          contenidoLimpio = contenidoCompleto
+            .replace(/\s*Fuente:\s*.+$/, '')
+            .replace(/\s*Esta información se encuentra en el "[^"]+"\.\s*/, '. ')
+            .replace(/\s*según (?:el|la) "[^"]+"\s*/, ' ')
+            .replace(/\s*en (?:el|la) "[^"]+"\s*/, ' ')
+            .trim();
+          
+          // Crear documento simulado basado en la fuente
+          documentos = [{
+            id: Date.now(), // ID temporal - será reemplazado por la descarga
+            titulo: nombreFuente.replace(/_/g, ' ').replace(/\d+$/, '').trim(),
+            descripcion: 'Documento fuente de la información proporcionada por el chatbot',
+            nombre_archivo: nombreFuente + '.pdf',
+            tipo_archivo: 'application/pdf',
+            tamaño_archivo: 'Disponible',
+            url_descarga: `/api/documents/download/${nombreFuente}`,
+            fuente_original: nombreFuente,
+            similitud_fuente: 1.0
+          }];
+          
+          console.log('📄 Documento creado:', documentos[0]);
+        }
+      }
+      
       const assistantMsg: MessageType = {
         id: Date.now() + 2,
         rol: 'asistente',
-        contenido: res.data.mensaje_asistente?.contenido || 'Sin respuesta'
+        contenido: contenidoLimpio,
+        documentos_descargables: documentos.length > 0 ? documentos : undefined
       };
+      
+      // Mostrar información de fuentes consultadas en consola para debug
+      if (fuentesConsultadas.length > 0) {
+        console.log('📚 Fuentes consultadas:', fuentesConsultadas);
+      }
+      
       setMessages((prev) => [...prev, assistantMsg]);
       updateChatHistory('assistant', assistantMsg.contenido); // Actualizar historial
     } catch (error) {
@@ -1316,21 +1501,139 @@ const Chat: React.FC = () => {
                       <Bot color="#ffffff" size={isMobile ? 20 : 24} />
                     }
                   </div>
-                  <div style={{
-                    background: msg.rol === 'usuario' 
-                      ? 'linear-gradient(135deg, #e8f8f5 0%, #d5f4e6 100%)'
-                      : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-                    borderRadius: '16px',
-                    padding: isMobile ? '14px 18px' : '18px 22px',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                    maxWidth: isMobile ? '80%' : '75%',
-                    border: '1px solid rgba(4, 120, 87, 0.1)',
-                    fontSize: isMobile ? '14px' : '15px',
-                    lineHeight: '1.6',
-                    wordBreak: 'break-word',
-                    color: '#1f2937'
-                  }}>
-                    {msg.contenido}
+                  <div style={{ maxWidth: isMobile ? '80%' : '75%' }}>
+                    <div style={{
+                      background: msg.rol === 'usuario' 
+                        ? 'linear-gradient(135deg, #e8f8f5 0%, #d5f4e6 100%)'
+                        : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                      borderRadius: '16px',
+                      padding: isMobile ? '14px 18px' : '18px 22px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                      border: '1px solid rgba(4, 120, 87, 0.1)',
+                      fontSize: isMobile ? '14px' : '15px',
+                      lineHeight: '1.6',
+                      wordBreak: 'break-word',
+                      color: '#1f2937'
+                    }}>
+                      {msg.contenido}
+                    </div>
+                    
+                    {msg.rol === 'asistente' && msg.documentos_descargables && msg.documentos_descargables.length > 0 && (
+                      <div style={{
+                        marginTop: '8px',
+                        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(14, 116, 144, 0.15)',
+                        overflow: 'hidden'
+                      }}>
+                        <button
+                          onClick={() => toggleDocuments(msg.id)}
+                          style={{
+                            width: '100%',
+                            padding: '12px 16px',
+                            background: 'transparent',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#0e7490',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(14, 116, 144, 0.05)'}
+                          onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = 'transparent'}
+                        >
+                          <span>Documentos ({msg.documentos_descargables.length})</span>
+                          {expandedDocuments.has(msg.id) ? 
+                            <ChevronUp size={16} /> : 
+                            <ChevronDown size={16} />
+                          }
+                        </button>
+                        
+                        {expandedDocuments.has(msg.id) && (
+                          <div style={{
+                            padding: '0 16px 16px 16px',
+                            borderTop: '1px solid rgba(14, 116, 144, 0.1)'
+                          }}>
+                            {msg.documentos_descargables.map((doc) => (
+                              <div key={doc.id} style={{
+                                background: '#ffffff',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                marginTop: '8px',
+                                border: '1px solid rgba(14, 116, 144, 0.1)',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                              }}>
+                                <div style={{
+                                  fontWeight: '600',
+                                  color: '#1f2937',
+                                  fontSize: '14px',
+                                  marginBottom: '4px'
+                                }}>
+                                  {doc.titulo}
+                                </div>
+                                {doc.descripcion && (
+                                  <div style={{
+                                    color: '#6b7280',
+                                    fontSize: '13px',
+                                    marginBottom: '8px',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {doc.descripcion}
+                                  </div>
+                                )}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  fontSize: '12px',
+                                  color: '#6b7280'
+                                }}>
+                                  <span>
+                                    {doc.nombre_archivo} • {obtenerTipoArchivo(doc.tipo_archivo)} • {formatearTamañoArchivo(doc.tamaño_archivo)}
+                                    {doc.similitud_fuente && doc.similitud_fuente > 0.5 && (
+                                      <span style={{ color: '#059669', marginLeft: '8px' }}>
+                                        ✅ {Math.round(doc.similitud_fuente * 100)}% coincidencia
+                                      </span>
+                                    )}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      descargarDocumento(doc.id, doc.nombre_archivo, doc.fuente_original);
+                                    }}
+                                    style={{
+                                      background: 'linear-gradient(135deg, #0e7490 0%, #0891b2 100%)',
+                                      color: '#ffffff',
+                                      textDecoration: 'none',
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      fontSize: '12px',
+                                      fontWeight: '500',
+                                      transition: 'all 0.2s',
+                                      boxShadow: '0 2px 4px rgba(14, 116, 144, 0.2)',
+                                      border: 'none',
+                                      cursor: 'pointer'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                                      (e.target as HTMLElement).style.boxShadow = '0 4px 8px rgba(14, 116, 144, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                                      (e.target as HTMLElement).style.boxShadow = '0 2px 4px rgba(14, 116, 144, 0.2)';
+                                    }}
+                                  >
+                                    📥 Descargar
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

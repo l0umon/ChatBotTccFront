@@ -20,6 +20,9 @@ interface UserType {
   nombre: string;
   apellido: string;
   rol: string;
+  activo?: boolean;
+  email?: string;
+  numero_identificacion?: string;
 }
 
 interface TicketType {
@@ -38,6 +41,13 @@ interface TicketType {
     apellido: string;
     username?: string;  // Campo que viene del backend
     email?: string;     // Campo que viene del backend
+  };
+  usuario_asignado?: {  // Nuevo campo para usuario asignado
+    id: number;
+    nombre: string;
+    apellido: string;
+    username?: string;
+    email?: string;
   };
   contextoChat?: Array<{
     role: string;
@@ -79,8 +89,10 @@ const categoriaOptions = [
 const TicketManagement: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserType | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<TicketType[]>([]);
+  const [usuariosAsignables, setUsuariosAsignables] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [filterPriority, setFilterPriority] = useState('todos');
@@ -246,6 +258,265 @@ const TicketManagement: React.FC = () => {
     }
   }, [showNotificationMessage, navigate]);
 
+  // Función para cargar usuarios asignables (solo personal y administrador)
+  const loadUsuariosAsignables = useCallback(async () => {
+    try {
+      console.log('🧑‍💼 Cargando usuarios asignables (personal y administrador)...');
+      const token = localStorage.getItem('authToken');
+      const response = await Api.get('/admin/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('📊 Respuesta completa de usuarios:', response.data);
+      
+      let usuariosData = [];
+      if (response.data.success && response.data.data) {
+        usuariosData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        usuariosData = response.data;
+      }
+      
+      // Filtrar solo usuarios con rol "personal" o "administrador" y que estén activos
+      const usuariosFiltrados = usuariosData.filter((usuario: UserType) => 
+        usuario.activo && 
+        (usuario.rol === 'personal' || usuario.rol === 'administrador')
+      );
+      
+      console.log('✅ Usuarios asignables filtrados:', usuariosFiltrados);
+      console.log('👥 Total usuarios asignables:', usuariosFiltrados.length);
+      
+      setUsuariosAsignables(usuariosFiltrados);
+    } catch (error) {
+      console.error('❌ Error cargando usuarios asignables:', error);
+      setUsuariosAsignables([]);
+    }
+  }, []);
+
+  // Función para manejar token expirado
+  const manejarTokenExpirado = useCallback(() => {
+    console.warn('🔄 Token expirado - limpiando localStorage y redirigiendo...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    
+    showNotificationMessage('⚠️ Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', 'error');
+    
+    // Redirigir al login después de un breve delay
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000);
+  }, [showNotificationMessage]);
+
+  // Función para verificar la validez del token
+  const verificarToken = useCallback(async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (!token) return false;
+    
+    try {
+      console.log('🔍 Verificando validez del token...');
+      const response = await fetch('/admin/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Verificación de token:', response.status, response.ok ? '✅' : '❌');
+      
+      if (response.status === 401) {
+        // Token expirado o inválido
+        manejarTokenExpirado();
+        return false;
+      }
+      
+      return response.ok;
+    } catch (error) {
+      console.error('❌ Error verificando token:', error);
+      return false;
+    }
+  }, [manejarTokenExpirado]);
+
+  // Función para asignar ticket usando la API real
+  const asignarTicket = useCallback(async (ticketId: number, usuarioId: number) => {
+    try {
+      // Validar que usuarioId sea un número positivo
+      const assignedUserId = Number(usuarioId);
+      if (!assignedUserId || assignedUserId <= 0) {
+        throw new Error('ID del usuario debe ser un número positivo');
+      }
+      
+      console.log(`🎯 Asignando ticket ${ticketId} al usuario ${assignedUserId}`);
+      
+      // Verificar token antes de proceder
+      const tokenValido = await verificarToken();
+      if (!tokenValido) {
+        manejarTokenExpirado();
+        throw new Error('Tu sesión ha expirado. Redirigiendo al login...');
+      }
+
+      // Usar el token correcto (token en lugar de authToken)
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Token de autenticación no encontrado');
+      }
+      
+      console.log('🔑 Token encontrado y verificado:', token?.substring(0, 10) + '...');
+      console.log('👤 Usuario actual:', JSON.stringify(user, null, 2));
+      console.log('🔐 Es administrador?:', isAdmin);
+      console.log('🌐 URL completa:', `${window.location.origin}/api/tickets/${ticketId}/asignar`);
+      console.log('📦 Payload:', { asignado_a: assignedUserId });
+      
+      // Decodificar token para ver qué contiene
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('🔍 Contenido del token:', payload);
+          console.log('🎭 Rol en token:', payload.rol || payload.role || 'No encontrado');
+        }
+      } catch (e) {
+        console.log('❌ No se pudo decodificar el token');
+      }
+      
+      // Usar fetch directo como en el ejemplo
+      const response = await fetch(`/api/tickets/${ticketId}/asignar`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          asignado_a: assignedUserId
+        })
+      });
+
+      console.log('📡 Status de respuesta:', response.status, response.statusText);
+      console.log('📋 Headers de respuesta:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        let errorData;
+        let errorMessage = response.statusText;
+        
+        try {
+          errorData = await response.json();
+          console.error('❌ Respuesta de error completa:', JSON.stringify(errorData, null, 2));
+          
+          // Verificar si es token expirado
+          if (response.status === 401 && 
+              (errorData?.error?.details === 'TOKEN_EXPIRED' || 
+               errorData?.message?.includes('Token expirado'))) {
+            manejarTokenExpirado();
+            throw new Error('Tu sesión ha expirado. Redirigiendo al login...');
+          }
+          
+          // Verificar permisos de administrador
+          if (response.status === 403 || errorData?.message?.includes('Solo los administradores')) {
+            throw new Error('⚠️ No tienes permisos de administrador para asignar tickets');
+          }
+          
+          errorMessage = errorData?.error?.message || errorData?.message || response.statusText;
+        } catch (jsonError) {
+          // Si no se puede parsear como JSON, intentar como texto
+          try {
+            const clonedResponse = response.clone();
+            const errorText = await clonedResponse.text();
+            console.error('❌ Respuesta de error (texto):', errorText);
+            errorMessage = errorText || response.statusText;
+          } catch (textError) {
+            console.error('❌ No se pudo leer el error:', textError);
+            errorMessage = response.statusText;
+          }
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${errorMessage}`);
+      }
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        console.log('✅ Ticket asignado exitosamente:', result.data);
+        
+        // Actualizar el ticket en el estado local
+        setTickets(prevTickets => 
+          prevTickets.map(ticket => 
+            ticket.id === ticketId 
+              ? { 
+                  ...ticket, 
+                  usuario_asignado: usuariosAsignables.find(u => u.id === assignedUserId),
+                  fecha_actualizacion: new Date().toISOString() 
+                }
+              : ticket
+          )
+        );
+        
+        const usuario = usuariosAsignables.find(u => u.id === assignedUserId);
+        showNotificationMessage(`✅ Ticket asignado a ${usuario?.nombre} ${usuario?.apellido} exitosamente`, 'success');
+        
+        return result.data;
+      } else {
+        console.error('❌ Error asignando ticket:', result.message);
+        throw new Error(result.message || 'Error desconocido del servidor');
+      }
+    } catch (error: unknown) {
+      console.error('❌ Error de conexión o asignación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      showNotificationMessage(`Error: ${errorMessage}`, 'error');
+      throw error;
+    }
+  }, [usuariosAsignables, showNotificationMessage, manejarTokenExpirado, verificarToken, isAdmin, user]);
+
+  // Handler para asignar usuario desde el select en la tabla
+  const asignarUsuarioTicket = useCallback(async (ticketId: number, usuarioId: number) => {
+    try {
+      console.log('🔍 DEBUG - Información del usuario actual:', { user, isAdmin });
+      console.log('🔍 DEBUG - Intentando asignar ticket:', { ticketId, usuarioId });
+      
+      // Si usuarioId es 0 o vacío, significa "Sin asignar"
+      if (!usuarioId) {
+        console.log(`🔄 Desasignando ticket ${ticketId}`);
+        showNotificationMessage('Función de desasignación no implementada aún', 'info');
+        return;
+      }
+
+      // Verificar permisos antes de hacer la llamada
+      if (!isAdmin) {
+        console.error('❌ Usuario no es administrador, no puede asignar tickets');
+        showNotificationMessage('Solo los administradores pueden asignar tickets', 'error');
+        return;
+      }
+
+      await asignarTicket(ticketId, usuarioId);
+      
+      // Actualizar estado local tras asignación exitosa
+      const usuarioAsignado = usuariosAsignables.find((u: UserType) => u.id === usuarioId);
+      
+      setTickets((prevTickets: TicketType[]) => prevTickets.map((ticket: TicketType) =>
+        ticket.id === ticketId
+          ? { ...ticket, usuario_asignado: usuarioAsignado }
+          : ticket
+      ));
+      setFilteredTickets((prevTickets: TicketType[]) => prevTickets.map((ticket: TicketType) =>
+        ticket.id === ticketId
+          ? { ...ticket, usuario_asignado: usuarioAsignado }
+          : ticket
+      ));
+    } catch (error) {
+      console.error('❌ Error en asignarUsuarioTicket:', error);
+      
+      // Capturar específicamente el error de permisos
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } };
+        if (apiError.response?.data?.message === 'Solo los administradores pueden asignar tickets') {
+          showNotificationMessage('No tienes permisos para asignar tickets. Solo los administradores pueden hacerlo.', 'error');
+          return;
+        }
+      }
+      
+      showNotificationMessage('Error al asignar el ticket', 'error');
+    }
+  }, [asignarTicket, usuariosAsignables, showNotificationMessage, user, isAdmin]);
+
   const filterTickets = useCallback(() => {
     let filtered = tickets;
 
@@ -284,11 +555,33 @@ const TicketManagement: React.FC = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        console.log('🔍 DEBUG - Datos del usuario parseados:', parsedUser);
+        console.log('🔍 DEBUG - Rol detectado:', parsedUser.rol);
+        
         setUser(parsedUser);
         
-        if (parsedUser.rol !== 'administrador') {
-          navigate('/chat');
-          return;
+        // Verificar si es administrador
+        const userIsAdmin = parsedUser.rol === 'administrador';
+        setIsAdmin(userIsAdmin);
+        
+        console.log('🔍 DEBUG - ¿Es administrador?:', userIsAdmin);
+        
+        // Temporal: Permitir acceso a todos los usuarios para debugging
+        if (!userIsAdmin) {
+          console.log('⚠️ Usuario no es administrador, rol:', parsedUser.rol);
+          console.log('� DEBUG: Permitiendo acceso pero sin funciones de admin');
+          // navigate('/chat');  // Comentado temporalmente
+          // return;
+        }
+        
+        console.log('✅ Usuario es administrador, cargando datos...');
+        
+        // Cargar tickets y usuarios asignables
+        loadTickets(true);
+        
+        // Solo cargar usuarios asignables si es administrador
+        if (userIsAdmin) {
+          loadUsuariosAsignables();
         }
       } catch (error) {
         console.error('Error al parsear datos del usuario:', error);
@@ -296,9 +589,7 @@ const TicketManagement: React.FC = () => {
         return;
       }
     }
-
-    loadTickets(true);
-  }, [loadTickets, navigate]);
+  }, [loadTickets, loadUsuariosAsignables, navigate]);
 
   useEffect(() => {
     filterTickets();
@@ -406,39 +697,15 @@ const TicketManagement: React.FC = () => {
     }
   }, [showNotificationMessage]);
 
-  // Función para obtener información visual del estado
-  const obtenerInfoEstado = (estado: string) => {
-    const estados = {
-      'abierto': { 
-        color: '#e74c3c', 
-        icono: '🔓', 
-        texto: 'Abierto'
-      },
-      'en_proceso': { 
-        color: '#f39c12', 
-        icono: '⚡', 
-        texto: 'En Proceso'
-      },
-      'resuelto': { 
-        color: '#27ae60', 
-        icono: '✅', 
-        texto: 'Resuelto'
-      },
-      'cerrado': { 
-        color: '#95a5a6', 
-        icono: '🔒', 
-        texto: 'Cerrado'
-      }
-    };
-    
-    return estados[estado as keyof typeof estados] || estados['abierto'];
-  };
+
 
   const stats = {
     total: tickets.length,
     abiertos: tickets.filter(t => t.estado === 'abierto').length,
     enProceso: tickets.filter(t => t.estado === 'en_proceso').length,
-    resueltos: tickets.filter(t => t.estado === 'resuelto').length
+    resueltos: tickets.filter(t => t.estado === 'resuelto').length,
+    asignados: tickets.filter(t => t.usuario_asignado).length,
+    sinAsignar: tickets.filter(t => !t.usuario_asignado).length
   };
 
   if (initialLoading) {
@@ -569,6 +836,15 @@ const TicketManagement: React.FC = () => {
                   display: isMobile ? 'none' : 'block'
                 }}>
                   Administra y responde tickets de soporte
+                </p>
+                {/* DEBUG: Mostrar información del usuario */}
+                <p style={{ 
+                  margin: '4px 0 0 0', 
+                  color: isAdmin ? '#27ae60' : '#e74c3c', 
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  Usuario: {user?.nombre} | Rol: {user?.rol} | Admin: {isAdmin ? 'Sí' : 'No'}
                 </p>
               </div>
             </div>
@@ -829,6 +1105,97 @@ const TicketManagement: React.FC = () => {
             </div>
           </div>
 
+          {/* Nota informativa sobre asignación */}
+          {isAdmin && (
+            <div style={{
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <CheckCircle size={20} color="#22c55e" />
+              <div style={{ fontSize: '14px', color: '#15803d', flex: 1 }}>
+                <strong>Asignación de Tickets:</strong> Puedes asignar tickets a usuarios con rol "personal" o "administrador". 
+                Los cambios se guardarán en el sistema.
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => {
+                    console.log('🔐 Debug localStorage:');
+                    console.log('- token:', localStorage.getItem('token')?.substring(0, 20) + '...');
+                    console.log('- authToken:', localStorage.getItem('authToken')?.substring(0, 20) + '...');
+                    console.log('- user data:', localStorage.getItem('user'));
+                    console.log('- Todas las claves:', Object.keys(localStorage));
+                    verificarToken().then(valido => 
+                      console.log('🔍 Token válido:', valido ? '✅' : '❌')
+                    );
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    background: '#22c55e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Debug Token
+                </button>
+                <button 
+                  onClick={() => {
+                    console.log('👤 Debug Usuario:');
+                    console.log('- user object:', user);
+                    console.log('- isAdmin:', isAdmin);
+                    console.log('- user.rol:', user?.rol);
+                    console.log('- user from localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Debug Usuario
+                </button>
+                <button 
+                  onClick={async () => {
+                    const token = localStorage.getItem('token');
+                    console.log('🔍 Verificando perfil con backend...');
+                    try {
+                      const response = await fetch('/api/auth/profile', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      const profile = await response.json();
+                      console.log('👤 Perfil desde backend:', profile);
+                    } catch (error) {
+                      console.error('❌ Error obteniendo perfil:', error);
+                    }
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    background: '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Check Backend
+                </button>
+              </div>
+            </div>
+          )}
+
           <div style={{
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(20px)',
@@ -945,6 +1312,40 @@ const TicketManagement: React.FC = () => {
                           {ticket.descripcion.length > 100 ? `${ticket.descripcion.substring(0, 100)}...` : ticket.descripcion}
                         </p>
 
+                        {isAdmin && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <label style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', display: 'block' }}>
+                              Asignar a:
+                            </label>
+                            <select
+                              value={ticket.usuario_asignado?.id || ''}
+                              onChange={(e) => {
+                                const userId = Number(e.target.value);
+                                asignarUsuarioTicket(ticket.id, userId);
+                              }}
+                              style={{
+                                background: '#f3f4f6',
+                                color: '#1e293b',
+                                border: '1px solid #e2e8f0',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                width: '100%'
+                              }}
+                            >
+                              <option value="">Sin asignar</option>
+                              {usuariosAsignables.map(usuario => (
+                                <option key={usuario.id} value={usuario.id}>
+                                  {usuario.nombre} {usuario.apellido} ({usuario.rol})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
                           <span>{ticket.categoria}</span>
                           <span>{formatDate(ticket.fecha_creacion)}</span>
@@ -966,6 +1367,11 @@ const TicketManagement: React.FC = () => {
                           <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e2e8f0' }}>
                             Estado
                           </th>
+                          {isAdmin && (
+                            <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e2e8f0' }}>
+                              Asignado a
+                            </th>
+                          )}
                           <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e2e8f0' }}>
                             Prioridad
                           </th>
@@ -979,98 +1385,128 @@ const TicketManagement: React.FC = () => {
                       </thead>
                       <tbody>
                         {filteredTickets.map(ticket => (
-                          <tr
-                            key={ticket.id}
-                            style={{
-                              borderBottom: '1px solid #e2e8f0',
-                              transition: 'all 0.3s ease'
-                            }}
-                          >
-                            <td style={{ padding: '16px 24px' }}>
-                              <div>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
-                                  {ticket.titulo}
-                                </div>
-                                <div style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>
-                                  {ticket.descripcion.length > 80 ? `${ticket.descripcion.substring(0, 80)}...` : ticket.descripcion}
-                                </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '16px 24px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  color: 'white',
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '50%',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '14px',
-                                  fontWeight: '600'
-                                }}>
-                                  {(ticket.usuario?.nombre || 'U').charAt(0)}{(ticket.usuario?.apellido || 'N').charAt(0)}
-                                </div>
+                            <tr
+                              key={ticket.id}
+                              style={{
+                                borderBottom: '1px solid #e2e8f0',
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              <td style={{ padding: '16px 24px' }}>
                                 <div>
-                                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
-                                    {ticket.usuario?.nombre || 'Usuario'} {ticket.usuario?.apellido || 'Desconocido'}
+                                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
+                                    {ticket.titulo}
+                                  </div>
+                                  <div style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>
+                                    {ticket.descripcion.length > 80 ? `${ticket.descripcion.substring(0, 80)}...` : ticket.descripcion}
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '16px 24px' }}>
-                              <select
-                                value={ticket.estado}
-                                onChange={(e) => cambiarEstadoTicket(ticket.id, e.target.value)}
-                                style={{
-                                  background: getStatusColor(ticket.estado),
+                              </td>
+                              <td style={{ padding: '16px 24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
+                                    fontWeight: '600'
+                                  }}>
+                                    {(ticket.usuario?.nombre || 'U').charAt(0)}{(ticket.usuario?.apellido || 'N').charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
+                                      {ticket.usuario?.nombre || 'Usuario'} {ticket.usuario?.apellido || 'Desconocido'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 24px' }}>
+                                <select
+                                  value={ticket.estado}
+                                  onChange={(e) => cambiarEstadoTicket(ticket.id, e.target.value)}
+                                  style={{
+                                    background: getStatusColor(ticket.estado),
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '12px',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    minWidth: '120px'
+                                  }}
+                                >
+                                  {estadoOptions.filter(option => option.value !== 'todos').map(option => (
+                                    <option 
+                                      key={option.value} 
+                                      value={option.value}
+                                      style={{ 
+                                        color: '#000000', 
+                                        background: '#ffffff',
+                                        padding: '4px'
+                                      }}
+                                    >
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              {isAdmin && (
+                                <td style={{ padding: '16px 24px' }}>
+                                  <select
+                                    value={ticket.usuario_asignado?.id || ''}
+                                    onChange={(e) => {
+                                      const userId = Number(e.target.value);
+                                      asignarUsuarioTicket(ticket.id, userId);
+                                    }}
+                                    style={{
+                                      background: '#f3f4f6',
+                                      color: '#1e293b',
+                                      border: '1px solid #e2e8f0',
+                                      padding: '6px 12px',
+                                      borderRadius: '8px',
+                                      fontSize: '12px',
+                                      fontWeight: '500',
+                                      cursor: 'pointer',
+                                      outline: 'none',
+                                      minWidth: '120px'
+                                    }}
+                                  >
+                                    <option value="">Sin asignar</option>
+                                    {usuariosAsignables.map(usuario => (
+                                      <option key={usuario.id} value={usuario.id}>
+                                        {usuario.nombre} {usuario.apellido} ({usuario.rol})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                              )}
+                              <td style={{ padding: '16px 24px' }}>
+                                <div style={{
+                                  background: getPriorityColor(ticket.prioridad),
                                   color: 'white',
-                                  border: 'none',
                                   padding: '6px 12px',
                                   borderRadius: '8px',
                                   fontSize: '12px',
                                   fontWeight: '500',
-                                  cursor: 'pointer',
-                                  outline: 'none',
-                                  minWidth: '120px'
-                                }}
-                              >
-                                {estadoOptions.filter(option => option.value !== 'todos').map(option => (
-                                  <option 
-                                    key={option.value} 
-                                    value={option.value}
-                                    style={{ 
-                                      color: '#000000', 
-                                      background: '#ffffff',
-                                      padding: '4px'
-                                    }}
-                                  >
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td style={{ padding: '16px 24px' }}>
-                              <div style={{
-                                background: getPriorityColor(ticket.prioridad),
-                                color: 'white',
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                                fontWeight: '500',
-                                display: 'inline-block'
-                              }}>
-                                {ticket.prioridad}
-                              </div>
-                            </td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>
-                              {ticket.categoria}
-                            </td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>
-                              {formatDate(ticket.fecha_creacion)}
-                            </td>
-                          </tr>
+                                  display: 'inline-block'
+                                }}>
+                                  {ticket.prioridad}
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>
+                                {ticket.categoria}
+                              </td>
+                              <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>
+                                {formatDate(ticket.fecha_creacion)}
+                              </td>
+                            </tr>
                         ))}
                       </tbody>
                     </table>
