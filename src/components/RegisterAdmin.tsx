@@ -24,7 +24,9 @@ const RegisterAdmin = () => {
     idNumber: '',
     role: 'alumno',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    tickets_alumnos: 'N',
+    tickets_personal: 'N'
   });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -68,6 +70,15 @@ const RegisterAdmin = () => {
     }));
     if (name === 'role') {
       setSelectedRole(value);
+      // Si selecciona alumno, resetear permisos de tickets
+      if (value === 'alumno') {
+        setFormData(prev => ({
+          ...prev,
+          role: value,
+          tickets_alumnos: 'N',
+          tickets_personal: 'N'
+        }));
+      }
     }
     if (error) setError('');
   };
@@ -107,7 +118,12 @@ const RegisterAdmin = () => {
         email: formData.email,
         numero_identificacion: formData.idNumber,
         rol: formData.role,
-        password: formData.password
+        password: formData.password,
+        // Solo incluir permisos de tickets si no es alumno
+        ...(formData.role !== 'alumno' && {
+          tickets_alumnos: formData.tickets_alumnos,
+          tickets_personal: formData.tickets_personal
+        })
       };
 
       console.log('Enviando datos:', registerData);
@@ -640,7 +656,17 @@ const RegisterAdmin = () => {
                     key={roleOption.value}
                     onClick={() => {
                       setSelectedRole(roleOption.value);
-                      setFormData(prev => ({ ...prev, role: roleOption.value }));
+                      if (roleOption.value === 'alumno') {
+                        // Si selecciona alumno, resetear permisos de tickets
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          role: roleOption.value,
+                          tickets_alumnos: 'N',
+                          tickets_personal: 'N'
+                        }));
+                      } else {
+                        setFormData(prev => ({ ...prev, role: roleOption.value }));
+                      }
                     }}
                     className={`register-role-option ${selectedRole === roleOption.value ? 'selected' : ''}`}
                     style={{
@@ -702,6 +728,203 @@ const RegisterAdmin = () => {
                 value={selectedRole}
               />
             </div>
+
+            {/* Permisos de Tickets - Solo para roles no-alumno */}
+            {selectedRole !== 'alumno' && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                border: '2px solid #0ea5e9',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                marginTop: '0.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Shield size={18} color="white" />
+                  </div>
+                  <h3 style={{
+                    margin: '0',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    color: '#0c4a6e'
+                  }}>
+                    Permisos de Gestión de Tickets
+                  </h3>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem'
+                }}>
+                  {/* Tickets Alumnos */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151',
+                      fontSize: '0.9rem'
+                    }}>
+                      Gestionar Tickets de Alumnos
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.5rem'
+                    }}>
+                      {['S', 'N'].map((option) => (
+                        <label
+                          key={option}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            cursor: 'pointer',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            border: `2px solid ${formData.tickets_alumnos === option ? '#10b981' : '#e5e7eb'}`,
+                            background: formData.tickets_alumnos === option ? 'rgba(16, 185, 129, 0.1)' : 'white',
+                            transition: 'all 0.2s',
+                            fontSize: '0.85rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="tickets_alumnos"
+                            value={option}
+                            checked={formData.tickets_alumnos === option}
+                            onChange={handleInputChange}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            border: `2px solid ${formData.tickets_alumnos === option ? '#10b981' : '#d1d5db'}`,
+                            background: formData.tickets_alumnos === option ? '#10b981' : 'transparent',
+                            position: 'relative'
+                          }}>
+                            {formData.tickets_alumnos === option && (
+                              <div style={{
+                                width: '4px',
+                                height: '4px',
+                                borderRadius: '50%',
+                                background: 'white',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
+                              }} />
+                            )}
+                          </div>
+                          {option === 'S' ? 'Sí' : 'No'}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tickets Personal */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151',
+                      fontSize: '0.9rem'
+                    }}>
+                      Gestionar Tickets de Personal
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.5rem'
+                    }}>
+                      {['S', 'N'].map((option) => (
+                        <label
+                          key={option}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            cursor: 'pointer',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            border: `2px solid ${formData.tickets_personal === option ? '#10b981' : '#e5e7eb'}`,
+                            background: formData.tickets_personal === option ? 'rgba(16, 185, 129, 0.1)' : 'white',
+                            transition: 'all 0.2s',
+                            fontSize: '0.85rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="tickets_personal"
+                            value={option}
+                            checked={formData.tickets_personal === option}
+                            onChange={handleInputChange}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            border: `2px solid ${formData.tickets_personal === option ? '#10b981' : '#d1d5db'}`,
+                            background: formData.tickets_personal === option ? '#10b981' : 'transparent',
+                            position: 'relative'
+                          }}>
+                            {formData.tickets_personal === option && (
+                              <div style={{
+                                width: '4px',
+                                height: '4px',
+                                borderRadius: '50%',
+                                background: 'white',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
+                              }} />
+                            )}
+                          </div>
+                          {option === 'S' ? 'Sí' : 'No'}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <p style={{
+                    margin: '0',
+                    fontSize: '0.8rem',
+                    color: '#1e40af',
+                    fontWeight: '500',
+                    lineHeight: '1.4'
+                  }}>
+                    💡 <strong>Nota:</strong> Estos permisos determinan qué tipos de tickets puede gestionar este usuario. 
+                    Los alumnos no tienen acceso a gestión de tickets.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Password */}
             <div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Api from './Api';
 import { 
   ArrowLeft, 
@@ -88,6 +88,7 @@ const categoriaOptions = [
 
 const TicketManagement: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<UserType | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [tickets, setTickets] = useState<TicketType[]>([]);
@@ -131,12 +132,40 @@ const TicketManagement: React.FC = () => {
       }
       console.log('Cargando tickets...');
       
+      // Obtener parámetro de tipo desde URL
+      const tipo = searchParams.get('tipo');
+      console.log('🎯 Tipo de ticket solicitado:', tipo);
+      
+      // Debug: Verificar token y datos del usuario
+      const token = localStorage.getItem('authToken');
+      const userData = localStorage.getItem('currentUser');
+      console.log('🔑 Token disponible:', !!token);
+      console.log('👤 Datos del usuario:', userData ? JSON.parse(userData) : 'No disponible');
+      
       // Intentar cargar desde la API, si falla usar datos de prueba
       try {
-        // Para administradores: obtener TODOS los tickets de TODOS los usuarios
-        // Usar solo los parámetros que sabemos que funcionan
-        const response = await Api.get('/tickets/mis-tickets?all=true&limit=100&offset=0');
-        console.log('🔍 Cargando TODOS los tickets de TODOS los usuarios (vista admin)');
+        let apiUrl = '';
+        let descripcionCarga = '';
+        
+        // Determinar la URL de la API según el tipo
+        if (tipo === 'alumnos') {
+          apiUrl = '/tickets/mis-tickets?all=true&ind_alumno=S&limit=100&offset=0';
+          descripcionCarga = 'tickets de alumnos';
+        } else if (tipo === 'personal') {
+          apiUrl = '/tickets/mis-tickets?all=true&ind_alumno=N&limit=100&offset=0';
+          descripcionCarga = 'tickets del personal';
+        } else {
+          // Sin parámetro o tipo diferente: cargar todos los tickets
+          apiUrl = '/tickets/mis-tickets?all=true&limit=100&offset=0';
+          descripcionCarga = 'todos los tickets';
+        }
+        
+        console.log('🔍 URL de API a utilizar:', apiUrl);
+        console.log('📋 Cargando:', descripcionCarga);
+        console.log('🔍 URL completa que se generará: http://localhost:3000/api' + apiUrl);
+        
+        const response = await Api.get(apiUrl);
+        console.log('🔍 Cargando', descripcionCarga, '(vista admin)');
         console.log('📊 Respuesta completa:', response.data);
         console.log('🎫 Número de tickets recibidos:', response.data?.data?.length || 'N/A');
         
@@ -256,7 +285,7 @@ const TicketManagement: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [showNotificationMessage, navigate]);
+  }, [showNotificationMessage, navigate, searchParams]);
 
   // Función para cargar usuarios asignables (solo personal y administrador)
   const loadUsuariosAsignables = useCallback(async () => {
@@ -589,7 +618,7 @@ const TicketManagement: React.FC = () => {
         return;
       }
     }
-  }, [loadTickets, loadUsuariosAsignables, navigate]);
+  }, [loadTickets, loadUsuariosAsignables, navigate, searchParams]);
 
   useEffect(() => {
     filterTickets();
@@ -716,7 +745,7 @@ const TicketManagement: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #047857 0%, #065f46 25%, #064e3b 50%, #0f172a 100%)',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
       }}>
         <div style={{
@@ -727,7 +756,7 @@ const TicketManagement: React.FC = () => {
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
           textAlign: 'center'
         }}>
-          <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px', color: '#667eea' }} />
+          <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px', color: '#047857' }} />
           <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
             Cargando Gestión de Tickets
           </h2>
@@ -746,7 +775,7 @@ const TicketManagement: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #047857 0%, #065f46 25%, #064e3b 50%, #0f172a 100%)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
       {notification.show && (
@@ -790,7 +819,7 @@ const TicketManagement: React.FC = () => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#667eea',
+                color: '#047857',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -808,7 +837,7 @@ const TicketManagement: React.FC = () => {
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                 borderRadius: '12px',
                 padding: '12px',
                 display: 'flex',
@@ -822,7 +851,7 @@ const TicketManagement: React.FC = () => {
                   margin: 0, 
                   fontSize: isMobile ? '20px' : '28px', 
                   fontWeight: '700',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
@@ -855,9 +884,9 @@ const TicketManagement: React.FC = () => {
               onClick={() => loadTickets(false)}
               disabled={loading}
               style={{
-                background: loading ? 'rgba(102, 126, 234, 0.5)' : 'rgba(102, 126, 234, 0.1)',
+                background: loading ? 'rgba(4, 120, 87, 0.5)' : 'rgba(4, 120, 87, 0.1)',
                 border: 'none',
-                color: '#667eea',
+                color: '#047857',
                 padding: '10px 16px',
                 borderRadius: '8px',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -922,7 +951,7 @@ const TicketManagement: React.FC = () => {
               border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <BarChart3 size={20} color="#667eea" />
+                <BarChart3 size={20} color="#047857" />
                 <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>Total</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: '700', color: '#1e293b' }}>
@@ -1405,7 +1434,7 @@ const TicketManagement: React.FC = () => {
                               <td style={{ padding: '16px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                                     color: 'white',
                                     width: '32px',
                                     height: '32px',

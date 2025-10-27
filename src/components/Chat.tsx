@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Api from './Api';
-import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
 
 interface UserType {
   nombre: string;
   apellido: string;
   rol: string;
+  tickets_alumnos?: string;
+  tickets_personal?: string;
 }
 
 interface ChatType {
@@ -53,6 +56,7 @@ interface DocumentoDescargable {
 }
 
 const Chat: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserType | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [chats, setChats] = useState<ChatType[]>([]);
@@ -167,6 +171,7 @@ const Chat: React.FC = () => {
   };
   const [message, setMessage] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showTicketPanel, setShowTicketPanel] = useState(false);
   const [error, setError] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -476,6 +481,24 @@ const Chat: React.FC = () => {
         break;
       case 'others':
         alert('Otras funciones administrativas - Próximamente disponible');
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Ticket management navigation
+  const handleTicketNav = (type: string) => {
+    setShowTicketPanel(false);
+    switch (type) {
+      case 'alumnos':
+        navigate('/admin/tickets?tipo=alumnos');
+        break;
+      case 'personal':
+        navigate('/admin/tickets?tipo=personal');
+        break;
+      case 'todos':
+        navigate('/admin/tickets');
         break;
       default:
         break;
@@ -1183,6 +1206,165 @@ const Chat: React.FC = () => {
                               {label}
                             </button>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Botón de Gestión de Tickets - Solo para usuarios con permisos */}
+                {(user?.tickets_alumnos === 'S' || user?.tickets_personal === 'S') && (
+                  <div style={{ position: 'relative', marginLeft: '8px' }}>
+                    <button
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: isMobile ? '12px' : '14px',
+                        fontWeight: '600',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onClick={() => setShowTicketPanel(!showTicketPanel)}
+                    >
+                      <Ticket size={14} />
+                      <span>Tickets</span>
+                    </button>
+                    {showTicketPanel && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '48px',
+                        right: '0',
+                        background: '#ffffff',
+                        color: '#1f2937',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        minWidth: '280px',
+                        zIndex: 1000,
+                        overflow: 'hidden',
+                        border: '1px solid rgba(4, 120, 87, 0.1)'
+                      }}>
+                        <div style={{
+                          padding: '20px',
+                          borderBottom: '1px solid #ecf0f1',
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                          color: '#ffffff'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Ticket size={20} />
+                            <span style={{ fontWeight: '700', fontSize: '16px' }}>Gestión de Tickets</span>
+                          </div>
+                        </div>
+                        <div style={{ padding: '16px' }}>
+                          {/* Opción Todos los Tickets - Solo para admin */}
+                          {user?.rol === 'administrador' && (
+                            <button
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                width: '100%',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                transition: 'all 0.3s ease',
+                                marginBottom: '4px',
+                                color: '#1f2937'
+                              }}
+                              onClick={() => handleTicketNav('todos')}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#f8f9fa';
+                                e.currentTarget.style.color = '#3b82f6';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'none';
+                                e.currentTarget.style.color = '#1f2937';
+                              }}
+                            >
+                              <Users size={18} />
+                              Todos los Tickets
+                            </button>
+                          )}
+
+                          {/* Tickets de Alumnos */}
+                          {user?.tickets_alumnos === 'S' && (
+                            <button
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                width: '100%',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                transition: 'all 0.3s ease',
+                                marginBottom: '4px',
+                                color: '#1f2937'
+                              }}
+                              onClick={() => handleTicketNav('alumnos')}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#f8f9fa';
+                                e.currentTarget.style.color = '#10b981';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'none';
+                                e.currentTarget.style.color = '#1f2937';
+                              }}
+                            >
+                              <GraduationCap size={18} />
+                              Tickets de Alumnos
+                            </button>
+                          )}
+
+                          {/* Tickets de Personal */}
+                          {user?.tickets_personal === 'S' && (
+                            <button
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                width: '100%',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                transition: 'all 0.3s ease',
+                                marginBottom: '4px',
+                                color: '#1f2937'
+                              }}
+                              onClick={() => handleTicketNav('personal')}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#f8f9fa';
+                                e.currentTarget.style.color = '#8b5cf6';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'none';
+                                e.currentTarget.style.color = '#1f2937';
+                              }}
+                            >
+                              <User size={18} />
+                              Tickets de Personal
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
