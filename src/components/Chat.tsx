@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api from './Api';
-import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
+import { LogOut, User, Bot, Plus, Users, Settings, FileText, University, Send, Ticket, Bell, X, Clock, CheckCircle, AlertCircle, XCircle, Calendar, RefreshCw, Eye, Search, ChevronDown, ChevronUp, GraduationCap, Download } from 'lucide-react';
 
 interface UserType {
   nombre: string;
@@ -477,7 +477,7 @@ const Chat: React.FC = () => {
         window.location.href = '/admin/gestion-usuarios.html';
         break;
       case 'settings':
-        alert('Configuración - Próximamente disponible');
+        navigate('/admin/gestion-documentos');
         break;
       case 'others':
         alert('Otras funciones administrativas - Próximamente disponible');
@@ -1170,7 +1170,7 @@ const Chat: React.FC = () => {
                         <div style={{ padding: '16px' }}>
                           {[
                             { key: 'users', icon: Users, label: 'Gestión de Usuarios' },
-                            { key: 'settings', icon: Settings, label: 'Configuración' },
+                            { key: 'settings', icon: Settings, label: 'Gestión de Documentos' },
                             { key: 'others', icon: FileText, label: 'Otros' }
                           ].map(({ key, icon: Icon, label }) => (
                             <button
@@ -1721,10 +1721,10 @@ const Chat: React.FC = () => {
                             cursor: 'pointer',
                             fontSize: '14px',
                             fontWeight: '500',
-                            color: '#0e7490',
+                            color: '#10b981',
                             transition: 'background-color 0.2s'
                           }}
-                          onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(14, 116, 144, 0.05)'}
+                          onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(16, 185, 129, 0.05)'}
                           onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = 'transparent'}
                         >
                           <span>Documentos ({msg.documentos_descargables.length})</span>
@@ -1737,7 +1737,7 @@ const Chat: React.FC = () => {
                         {expandedDocuments.has(msg.id) && (
                           <div style={{
                             padding: '0 16px 16px 16px',
-                            borderTop: '1px solid rgba(14, 116, 144, 0.1)'
+                            borderTop: '1px solid rgba(16, 185, 129, 0.1)'
                           }}>
                             {msg.documentos_descargables.map((doc) => (
                               <div key={doc.id} style={{
@@ -1745,7 +1745,7 @@ const Chat: React.FC = () => {
                                 borderRadius: '8px',
                                 padding: '12px',
                                 marginTop: '8px',
-                                border: '1px solid rgba(14, 116, 144, 0.1)',
+                                border: '1px solid rgba(16, 185, 129, 0.1)',
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
                               }}>
                                 <div style={{
@@ -1786,7 +1786,7 @@ const Chat: React.FC = () => {
                                       descargarDocumento(doc.id, doc.nombre_archivo, doc.fuente_original);
                                     }}
                                     style={{
-                                      background: 'linear-gradient(135deg, #0e7490 0%, #0891b2 100%)',
+                                      background: 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
                                       color: '#ffffff',
                                       textDecoration: 'none',
                                       padding: '6px 12px',
@@ -1794,20 +1794,23 @@ const Chat: React.FC = () => {
                                       fontSize: '12px',
                                       fontWeight: '500',
                                       transition: 'all 0.2s',
-                                      boxShadow: '0 2px 4px rgba(14, 116, 144, 0.2)',
+                                      boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
                                       border: 'none',
                                       cursor: 'pointer'
                                     }}
                                     onMouseEnter={(e) => {
                                       (e.target as HTMLElement).style.transform = 'translateY(-1px)';
-                                      (e.target as HTMLElement).style.boxShadow = '0 4px 8px rgba(14, 116, 144, 0.3)';
+                                      (e.target as HTMLElement).style.background = 'linear-gradient(135deg, #047857 0%, #10b981 100%)';
+                                      (e.target as HTMLElement).style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.3)';
                                     }}
                                     onMouseLeave={(e) => {
                                       (e.target as HTMLElement).style.transform = 'translateY(0)';
-                                      (e.target as HTMLElement).style.boxShadow = '0 2px 4px rgba(14, 116, 144, 0.2)';
+                                      (e.target as HTMLElement).style.background = 'linear-gradient(135deg, #10b981 0%, #065f46 100%)';
+                                      (e.target as HTMLElement).style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
                                     }}
                                   >
-                                    📥 Descargar
+                                    <Download size={14} style={{ marginRight: '6px' }} />
+                                    Descargar
                                   </button>
                                 </div>
                               </div>
@@ -2216,15 +2219,21 @@ const Chat: React.FC = () => {
                     borderRadius: '8px',
                     fontSize: '14px',
                     transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    backgroundColor: '#ffffff',
+                    color: '#1f2937'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#006A4E';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 106, 78, 0.1)';
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                    e.target.style.backgroundColor = '#ffffff';
+                    e.target.style.color = '#1f2937';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#e9ecef';
                     e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = '#ffffff';
+                    e.target.style.color = '#1f2937';
                   }}
                 />
               </div>
@@ -2344,29 +2353,37 @@ const Chat: React.FC = () => {
               <div style={{ marginBottom: '30px' }}>
                 <label style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
+                  alignItems: 'flex-start',
+                  gap: '8px',
                   cursor: 'pointer',
                   fontWeight: '500',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  lineHeight: '1.5'
                 }}>
                   <input
                     type="checkbox"
                     checked={ticketForm.includeContext}
                     onChange={(e) => setTicketForm(prev => ({ ...prev, includeContext: e.target.checked }))}
-                    style={{ transform: 'scale(1.2)' }}
+                    style={{ 
+                      marginTop: '3px',
+                      flexShrink: 0,
+                      width: '16px',
+                      height: '16px'
+                    }}
                   />
-                  Incluir contexto de la conversación actual
+                  <div>
+                    <div>Incluir contexto de la conversación actual</div>
+                    <small style={{
+                      color: '#7f8c8d',
+                      fontSize: '12px',
+                      marginTop: '2px',
+                      display: 'block',
+                      lineHeight: '1.3'
+                    }}>
+                      Se incluirán los últimos mensajes de esta conversación para dar contexto al equipo de soporte.
+                    </small>
+                  </div>
                 </label>
-                <small style={{
-                  color: '#7f8c8d',
-                  fontSize: '12px',
-                  marginTop: '5px',
-                  display: 'block',
-                  marginLeft: '30px'
-                }}>
-                  Se incluirán los últimos mensajes de esta conversación para dar contexto al equipo de soporte.
-                </small>
               </div>
 
               {/* Mensaje de estado */}
