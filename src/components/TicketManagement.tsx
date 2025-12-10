@@ -1022,16 +1022,16 @@ const TicketManagement: React.FC = () => {
           }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr',
-              gap: '16px',
+              gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr 1fr 1fr',
+              gap: isMobile ? '16px' : '20px',
               alignItems: 'end'
             }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
                   Buscar tickets
                 </label>
-                <div style={{ position: 'relative' }}>
-                  <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
                   <input
                     type="text"
                     value={searchTerm}
@@ -1039,13 +1039,15 @@ const TicketManagement: React.FC = () => {
                     placeholder="Buscar por título, descripción o usuario..."
                     style={{
                       width: '100%',
+                      maxWidth: '100%',
                       padding: '12px 12px 12px 44px',
                       border: '2px solid #e2e8f0',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#ffffff',
                       transition: 'all 0.3s ease',
-                      outline: 'none'
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -1150,77 +1152,6 @@ const TicketManagement: React.FC = () => {
               <div style={{ fontSize: '14px', color: '#15803d', flex: 1 }}>
                 <strong>Asignación de Tickets:</strong> Puedes asignar tickets a usuarios con rol "personal" o "administrador". 
                 Los cambios se guardarán en el sistema.
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={() => {
-                    console.log('🔐 Debug localStorage:');
-                    console.log('- token:', localStorage.getItem('token')?.substring(0, 20) + '...');
-                    console.log('- authToken:', localStorage.getItem('authToken')?.substring(0, 20) + '...');
-                    console.log('- user data:', localStorage.getItem('user'));
-                    console.log('- Todas las claves:', Object.keys(localStorage));
-                    verificarToken().then(valido => 
-                      console.log('🔍 Token válido:', valido ? '✅' : '❌')
-                    );
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    background: '#22c55e',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Debug Token
-                </button>
-                <button 
-                  onClick={() => {
-                    console.log('👤 Debug Usuario:');
-                    console.log('- user object:', user);
-                    console.log('- isAdmin:', isAdmin);
-                    console.log('- user.rol:', user?.rol);
-                    console.log('- user from localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    background: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Debug Usuario
-                </button>
-                <button 
-                  onClick={async () => {
-                    const token = localStorage.getItem('token');
-                    console.log('🔍 Verificando perfil con backend...');
-                    try {
-                      const response = await fetch('/api/auth/profile', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                      });
-                      const profile = await response.json();
-                      console.log('👤 Perfil desde backend:', profile);
-                    } catch (error) {
-                      console.error('❌ Error obteniendo perfil:', error);
-                    }
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    background: '#f59e0b',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Check Backend
-                </button>
               </div>
             </div>
           )}

@@ -69,8 +69,22 @@ const UserManagement: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-  console.log('Users response:', response.data);
-      setUsers([]); // Asegurar que se limpia el estado en caso de error
+      console.log('Users response:', response.data);
+      
+      // Procesar la respuesta correctamente
+      if (response.data.success && response.data.data) {
+        console.log('Setting users:', response.data.data);
+        setUsers(response.data.data);
+        showNotification(`Se cargaron ${response.data.data.length} usuarios correctamente`, 'success');
+      } else {
+        console.error('Error en la respuesta:', response.data);
+        showNotification('Error al cargar usuarios', 'error');
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showNotification('Error al cargar usuarios. Verifica tu conexión.', 'error');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
