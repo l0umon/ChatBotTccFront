@@ -9,7 +9,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  XCircle,
   User,
   BarChart3,
   RefreshCw
@@ -23,6 +22,17 @@ interface UserType {
   activo?: boolean;
   email?: string;
   numero_identificacion?: string;
+}
+
+interface ApiError {
+  response?: {
+    status: number;
+    data: {
+      success?: boolean;
+      message?: string;
+      data?: unknown;
+    };
+  };
 }
 
 interface TicketType {
@@ -130,59 +140,146 @@ const TicketManagement: React.FC = () => {
       } else {
         setLoading(true);
       }
-      console.log('Cargando tickets...');
+      console.log('🔄 Cargando tickets...');
       
       // Obtener parámetro de tipo desde URL
       const tipo = searchParams.get('tipo');
-      console.log('🎯 Tipo de ticket solicitado:', tipo);
+      console.log('🎯 Tipo de ticket solicitado desde URL:', tipo);
       
-      // Debug: Verificar token y datos del usuario
-      const token = localStorage.getItem('authToken');
+      // Obtener datos del usuario actual
       const userData = localStorage.getItem('currentUser');
-      console.log('🔑 Token disponible:', !!token);
-      console.log('👤 Datos del usuario:', userData ? JSON.parse(userData) : 'No disponible');
+      if (!userData) {
+        throw new Error('Datos del usuario no encontrados');
+      }
       
-      // Intentar cargar desde la API, si falla usar datos de prueba
-      try {
-        let apiUrl = '';
-        let descripcionCarga = '';
+      const currentUser = JSON.parse(userData);
+      console.log('👤 Usuario actual:', currentUser);
+      console.log('🔍 Rol del usuario:', currentUser.rol);
+      
+      // Construir URL y parámetros según especificaciones
+      let apiUrl = '';
+      const params = new URLSearchParams({
+        limit: '100',
+        offset: '0'
+      });
+      
+      let descripcionCarga = '';
+      
+      // Implementar lógica según especificaciones del documento
+      if (currentUser.rol === 'administrador') {
+        console.log('👑 Usuario administrador - usando endpoint admin/todos');
         
-        // Determinar la URL de la API según el tipo
+        // Usar endpoint específico para administradores
+        apiUrl = '/tickets/admin/todos';
+        
         if (tipo === 'alumnos') {
-          apiUrl = '/tickets/mis-tickets?all=true&ind_alumno=S&limit=100&offset=0';
+          params.append('ind_alumno', 'S');
           descripcionCarga = 'tickets de alumnos';
+          console.log('📚 Filtrando: Solo tickets de alumnos');
         } else if (tipo === 'personal') {
-          apiUrl = '/tickets/mis-tickets?all=true&ind_alumno=N&limit=100&offset=0';
+          params.append('ind_alumno', 'N');
           descripcionCarga = 'tickets del personal';
+          console.log('👥 Filtrando: Solo tickets del personal');
         } else {
-          // Sin parámetro o tipo diferente: cargar todos los tickets
-          apiUrl = '/tickets/mis-tickets?all=true&limit=100&offset=0';
-          descripcionCarga = 'todos los tickets';
+          // Sin filtro específico - todos los tickets del sistema
+          descripcionCarga = 'todos los tickets del sistema';
+          console.log('🌐 Filtrando: Todos los tickets');
         }
         
-        console.log('🔍 URL de API a utilizar:', apiUrl);
-        console.log('📋 Cargando:', descripcionCarga);
-        console.log('🔍 URL completa que se generará: http://localhost:3000/api' + apiUrl);
+      } else if (currentUser.rol === 'personal') {
+        console.log('👔 Usuario personal - verificando permisos específicos');
         
-        const response = await Api.get(apiUrl);
-        console.log('🔍 Cargando', descripcionCarga, '(vista admin)');
-        console.log('📊 Respuesta completa:', response.data);
-        console.log('🎫 Número de tickets recibidos:', response.data?.data?.length || 'N/A');
+        // Usar endpoint para usuarios normales
+        apiUrl = '/tickets/mis-tickets';
         
-        let ticketsData = [];
-        // Manejar la respuesta basándose en el formato de MyTickets
-        if (response.data.success && response.data.data) {
-          if (response.data.data.tickets) {
-            ticketsData = response.data.data.tickets;
-          } else if (Array.isArray(response.data.data)) {
-            ticketsData = response.data.data;
+        // Para personal: aplicar filtros según permisos
+        const tienePermisosAlumnos = currentUser.tickets_alumnos === 'S';
+        const tienePermisosPersonal = currentUser.tickets_personal === 'S';
+        
+        console.log('🔐 Permisos del personal:');
+        console.log('  - tickets_alumnos:', tienePermisosAlumnos ? 'SÍ' : 'NO');
+        console.log('  - tickets_personal:', tienePermisosPersonal ? 'SÍ' : 'NO');
+        
+        if (tipo === 'alumnos' && tienePermisosAlumnos) {
+          params.append('ind_alumno', 'S');
+          descripcionCarga = 'tickets de alumnos (por permisos)';
+          console.log('📚 Filtrando: Tickets de alumnos (autorizado)');
+        } else if (tipo === 'personal' && tienePermisosPersonal) {
+          params.append('ind_alumno', 'N');
+          descripcionCarga = 'tickets del personal (por permisos)';
+          console.log('👥 Filtrando: Tickets del personal (autorizado)');
+        } else if (!tipo && (tienePermisosAlumnos || tienePermisosPersonal)) {
+          // Sin tipo específico: mostrar según permisos
+          if (tienePermisosAlumnos && tienePermisosPersonal) {
+            descripcionCarga = 'tickets según permisos (alumnos y personal)';
+            console.log('🔄 Filtrando: Todos los tickets permitidos');
+          } else if (tienePermisosAlumnos) {
+            params.append('ind_alumno', 'S');
+            descripcionCarga = 'tickets de alumnos (por permisos)';
+            console.log('📚 Filtrando: Solo tickets de alumnos permitidos');
+          } else if (tienePermisosPersonal) {
+            params.append('ind_alumno', 'N');
+            descripcionCarga = 'tickets del personal (por permisos)';
+            console.log('👥 Filtrando: Solo tickets del personal permitidos');
           }
-        } else if (response.data.tickets) {
-          ticketsData = response.data.tickets;
-        } else if (Array.isArray(response.data.data)) {
+        } else {
+          // Sin permisos específicos o tipo no autorizado: solo tickets propios
+          descripcionCarga = 'tickets propios';
+          console.log('👤 Filtrando: Solo tickets propios (sin permisos específicos)');
+        }
+        
+      } else {
+        // Alumno: solo sus propios tickets
+        console.log('🎓 Usuario alumno - solo tickets propios');
+        apiUrl = '/tickets/mis-tickets';
+        descripcionCarga = 'tickets propios';
+        // No agregar parámetros adicionales - la API devuelve solo tickets propios por defecto
+      }
+        
+        const finalUrl = `${apiUrl}?${params.toString()}`;
+        console.log('🔍 URL final construida:', finalUrl);
+        console.log('📋 Cargando:', descripcionCarga);
+        console.log('🎯 Parámetros enviados al backend:', Object.fromEntries(params));
+        
+        const response = await Api.get(finalUrl);
+        console.log('📊 Respuesta completa del backend:', response.data);
+        console.log('🔍 Headers de la petición:', response.config?.headers);
+        
+        // Verificar si el backend devolvió los tickets filtrados correctamente
+        if (response.data.data) {
+          console.log('📈 Cantidad de tickets devueltos:', response.data.data.length);
+          const rolesEncontrados = response.data.data.map((t: any) => t.usuario?.rol).filter(Boolean);
+          const rolesUnicos = [...new Set(rolesEncontrados)];
+          console.log('👥 Roles de usuarios en los tickets:', rolesUnicos);
+          
+          // DIAGNÓSTICO: Verificar si el filtrado funcionó
+          if (tipo === 'alumnos' && rolesUnicos.length > 0 && !rolesUnicos.includes('alumno')) {
+            console.warn('⚠️ PROBLEMA: Se solicitaron tickets de alumnos pero no hay ninguno en la respuesta');
+            console.warn('🔍 Roles encontrados:', rolesUnicos);
+          } else if (tipo === 'personal' && rolesUnicos.length > 0 && !rolesUnicos.includes('personal')) {
+            console.warn('⚠️ PROBLEMA: Se solicitaron tickets de personal pero no hay ninguno en la respuesta');
+            console.warn('🔍 Roles encontrados:', rolesUnicos);
+          }
+          
+          // Mostrar diagnóstico en consola
+          console.log('🎯 DIAGNÓSTICO DE FILTRADO:');
+          console.log(`   • Tipo solicitado: ${tipo || 'ninguno'}`);
+          console.log(`   • Parámetros enviados: ${params.toString()}`);
+          console.log(`   • Tickets recibidos: ${response.data.data.length}`);
+          console.log(`   • Roles en respuesta: ${rolesUnicos.join(', ') || 'ninguno'}`);
+        }
+        
+        // Procesar respuesta según especificaciones
+        let ticketsData = [];
+        if (response.data.success && Array.isArray(response.data.data)) {
           ticketsData = response.data.data;
-        } else if (Array.isArray(response.data)) {
-          ticketsData = response.data;
+          console.log('✅ Tickets obtenidos exitosamente:', ticketsData.length);
+          
+          if (response.data.filtros) {
+            console.log('📋 Información de filtros:', response.data.filtros);
+          }
+        } else {
+          console.warn('⚠️ Respuesta no tiene el formato esperado:', response.data);
         }
         
         console.log('📋 Tickets procesados:', ticketsData);
@@ -196,88 +293,41 @@ const TicketManagement: React.FC = () => {
         }
         const validatedTickets = validateTicketData(ticketsData);
         setTickets(validatedTickets);
-        if (!isInitial) {
-          showNotificationMessage(`Se cargaron ${ticketsData.length} tickets correctamente`, 'success');
-        }
-      } catch (error: unknown) {
+        // Popup de éxito removido para evitar molestias al usuario
+        
+    } catch (error: unknown) {
         console.error('Error conectando con la API:', error);
         
-        // Verificar si es un error de autenticación (401)
-        const errorString = String(error);
-        if (errorString.includes('401') || errorString.includes('TOKEN_MISSING') || errorString.includes('Unauthorized')) {
-          console.log('Token de autenticación faltante o expirado, redirigiendo al login');
+        // Manejo de errores según especificaciones
+        const apiError = error as ApiError;
+        const status = apiError?.response?.status;
+        const errorData = apiError?.response?.data;
+        
+        if (status === 401) {
+          console.log('❌ Error 401: Token faltante o expirado');
           showNotificationMessage('Sesión expirada. Por favor, inicia sesión nuevamente.', 'error');
           localStorage.removeItem('authToken');
           localStorage.removeItem('currentUser');
           navigate('/login');
           return;
+        } else if (status === 403) {
+          console.log('❌ Error 403: Sin permisos suficientes');
+          showNotificationMessage('Sin permisos para acceder a estos tickets.', 'error');
+          return;
+        } else if (status === 404) {
+          console.log('❌ Error 404: Endpoint no encontrado');
+          showNotificationMessage('Servicio de tickets no disponible temporalmente.', 'error');
+          return;
+        } else {
+          // Otros errores
+          const errorMessage = errorData?.message || 'Error al cargar tickets. Verifica tu conexión.';
+          console.error('❌ Error de API:', error);
+          showNotificationMessage(errorMessage, 'error');
         }
         
-        // Para otros errores, mostrar mensaje genérico
-        showNotificationMessage('Error al cargar tickets. Verifica tu conexión.', 'error');
-        console.error('Error de API:', error);
-        throw error;
+        // Si hay error, mostrar lista vacía
+        setTickets([]);
         
-        // OPCIÓN 2: Usar datos de prueba (comentar el throw de arriba)
-        // console.log('Usando datos de prueba mientras se configura la API');
-        const demoTickets = [
-          {
-            id: 1,
-            titulo: "Problema con el inicio de sesión",
-            descripcion: "No puedo acceder a mi cuenta desde ayer",
-            categoria: "tecnico",
-            prioridad: "alta",
-            estado: "abierto",
-            fecha_creacion: "2024-10-09T10:30:00Z",
-            fecha_actualizacion: "2024-10-09T10:30:00Z",
-            usuario: {
-              id: 101,
-              nombre: "Juan",
-              apellido: "Pérez"
-            }
-          },
-          {
-            id: 2,
-            titulo: "Consulta sobre documentación",
-            descripcion: "¿Dónde puedo encontrar el manual de usuario?",
-            categoria: "academico",
-            prioridad: "media",
-            estado: "en_proceso",
-            fecha_creacion: "2024-10-09T09:15:00Z",
-            fecha_actualizacion: "2024-10-09T14:20:00Z",
-            usuario: {
-              id: 102,
-              nombre: "María",
-              apellido: "González"
-            }
-          },
-          {
-            id: 3,
-            titulo: "Error en la aplicación móvil",
-            descripcion: "La app se cierra inesperadamente al abrir documentos",
-            categoria: "tecnico",
-            prioridad: "alta",
-            estado: "resuelto",
-            fecha_creacion: "2024-10-08T16:45:00Z",
-            fecha_actualizacion: "2024-10-09T08:30:00Z",
-            usuario: {
-              id: 103,
-              nombre: "Carlos",
-              apellido: "Rodríguez"
-            },
-            respuesta_admin: "Problema resuelto en la versión 2.1.5"
-          }
-        ];
-        
-        setTickets(demoTickets);
-        if (!isInitial) {
-          showNotificationMessage(`Cargados ${demoTickets.length} tickets de demostración`, 'info');
-        }
-      }
-    } catch (error) {
-      console.error('Error cargando tickets:', error);
-      showNotificationMessage('Error al cargar los tickets', 'error');
-      setTickets([]);
     } finally {
       if (isInitial) {
         setInitialLoading(false);
@@ -321,231 +371,134 @@ const TicketManagement: React.FC = () => {
     }
   }, []);
 
-  // Función para manejar token expirado
-  const manejarTokenExpirado = useCallback(() => {
-    console.warn('🔄 Token expirado - limpiando localStorage y redirigiendo...');
-    localStorage.removeItem('token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    
-    showNotificationMessage('⚠️ Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', 'error');
-    
-    // Redirigir al login después de un breve delay
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 2000);
-  }, [showNotificationMessage]);
-
-  // Función para verificar la validez del token
-  const verificarToken = useCallback(async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-    if (!token) return false;
-    
-    try {
-      console.log('🔍 Verificando validez del token...');
-      const response = await fetch('/admin/users', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('📡 Verificación de token:', response.status, response.ok ? '✅' : '❌');
-      
-      if (response.status === 401) {
-        // Token expirado o inválido
-        manejarTokenExpirado();
-        return false;
-      }
-      
-      return response.ok;
-    } catch (error) {
-      console.error('❌ Error verificando token:', error);
-      return false;
-    }
-  }, [manejarTokenExpirado]);
-
-  // Función para asignar ticket usando la API real
+  // Función para asignar ticket usando la API según especificaciones
   const asignarTicket = useCallback(async (ticketId: number, usuarioId: number) => {
     try {
-      // Validar que usuarioId sea un número positivo
-      const assignedUserId = Number(usuarioId);
-      if (!assignedUserId || assignedUserId <= 0) {
-        throw new Error('ID del usuario debe ser un número positivo');
-      }
+      console.log(`🎯 Asignando ticket ${ticketId} al usuario ${usuarioId}`);
       
-      console.log(`🎯 Asignando ticket ${ticketId} al usuario ${assignedUserId}`);
-      
-      // Verificar token antes de proceder
-      const tokenValido = await verificarToken();
-      if (!tokenValido) {
-        manejarTokenExpirado();
-        throw new Error('Tu sesión ha expirado. Redirigiendo al login...');
-      }
-
-      // Usar el token correcto (token en lugar de authToken)
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('Token de autenticación no encontrado');
-      }
-      
-      console.log('🔑 Token encontrado y verificado:', token?.substring(0, 10) + '...');
-      console.log('👤 Usuario actual:', JSON.stringify(user, null, 2));
-      console.log('🔐 Es administrador?:', isAdmin);
-      console.log('🌐 URL completa:', `${window.location.origin}/api/tickets/${ticketId}/asignar`);
-      console.log('📦 Payload:', { asignado_a: assignedUserId });
-      
-      // Decodificar token para ver qué contiene
-      try {
-        const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('🔍 Contenido del token:', payload);
-          console.log('🎭 Rol en token:', payload.rol || payload.role || 'No encontrado');
-        }
-      } catch (e) {
-        console.log('❌ No se pudo decodificar el token');
-      }
-      
-      // Usar fetch directo como en el ejemplo
-      const response = await fetch(`/api/tickets/${ticketId}/asignar`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          asignado_a: assignedUserId
-        })
+      // Usar PATCH con endpoint específico según especificaciones correctas
+      const response = await Api.patch(`/tickets/${ticketId}/asignar`, {
+        asignado_a: usuarioId
       });
 
-      console.log('📡 Status de respuesta:', response.status, response.statusText);
-      console.log('📋 Headers de respuesta:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        let errorData;
-        let errorMessage = response.statusText;
-        
-        try {
-          errorData = await response.json();
-          console.error('❌ Respuesta de error completa:', JSON.stringify(errorData, null, 2));
-          
-          // Verificar si es token expirado
-          if (response.status === 401 && 
-              (errorData?.error?.details === 'TOKEN_EXPIRED' || 
-               errorData?.message?.includes('Token expirado'))) {
-            manejarTokenExpirado();
-            throw new Error('Tu sesión ha expirado. Redirigiendo al login...');
-          }
-          
-          // Verificar permisos de administrador
-          if (response.status === 403 || errorData?.message?.includes('Solo los administradores')) {
-            throw new Error('⚠️ No tienes permisos de administrador para asignar tickets');
-          }
-          
-          errorMessage = errorData?.error?.message || errorData?.message || response.statusText;
-        } catch (jsonError) {
-          // Si no se puede parsear como JSON, intentar como texto
-          try {
-            const clonedResponse = response.clone();
-            const errorText = await clonedResponse.text();
-            console.error('❌ Respuesta de error (texto):', errorText);
-            errorMessage = errorText || response.statusText;
-          } catch (textError) {
-            console.error('❌ No se pudo leer el error:', textError);
-            errorMessage = response.statusText;
-          }
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${errorMessage}`);
-      }
-
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
-        console.log('✅ Ticket asignado exitosamente:', result.data);
+      if (response.data.success) {
+        console.log('✅ Ticket asignado correctamente:', response.data);
         
         // Actualizar el ticket en el estado local
+        const usuarioEncontrado = usuariosAsignables.find(u => u.id === usuarioId);
         setTickets(prevTickets => 
           prevTickets.map(ticket => 
             ticket.id === ticketId 
               ? { 
                   ...ticket, 
-                  usuario_asignado: usuariosAsignables.find(u => u.id === assignedUserId),
-                  fecha_actualizacion: new Date().toISOString() 
+                  usuario_asignado: usuarioEncontrado ? {
+                    id: usuarioEncontrado.id,
+                    nombre: usuarioEncontrado.nombre,
+                    apellido: usuarioEncontrado.apellido,
+                    email: usuarioEncontrado.email
+                  } : undefined,
+                  fecha_actualizacion: new Date().toISOString()
                 }
               : ticket
           )
         );
         
-        const usuario = usuariosAsignables.find(u => u.id === assignedUserId);
-        showNotificationMessage(`✅ Ticket asignado a ${usuario?.nombre} ${usuario?.apellido} exitosamente`, 'success');
-        
-        return result.data;
+        const usuario = usuariosAsignables.find(u => u.id === usuarioId);
+        showNotificationMessage(`Ticket asignado a ${usuario?.nombre} ${usuario?.apellido} exitosamente`, 'success');
       } else {
-        console.error('❌ Error asignando ticket:', result.message);
-        throw new Error(result.message || 'Error desconocido del servidor');
+        throw new Error(response.data.message || 'Error asignando el ticket');
       }
     } catch (error: unknown) {
-      console.error('❌ Error de conexión o asignación:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      showNotificationMessage(`Error: ${errorMessage}`, 'error');
-      throw error;
+      console.error('❌ Error asignando ticket:', error);
+      
+      // Manejo de errores según especificaciones
+      const apiError = error as ApiError;
+      const status = apiError?.response?.status;
+      const errorData = apiError?.response?.data;
+      
+      console.error('📋 Detalles del error:', {
+        status,
+        message: errorData?.message,
+        error: errorData?.error,
+        fullError: errorData
+      });
+      
+      if (status === 403) {
+        showNotificationMessage('Sin permisos para asignar tickets.', 'error');
+      } else if (status === 404) {
+        showNotificationMessage('Ticket no encontrado.', 'error');
+      } else if (status === 500) {
+        // Error interno del servidor - mostrar información detallada
+        const serverError = errorData?.error || 'Error interno del servidor';
+        showNotificationMessage(`Error del servidor: ${serverError}. Contacta al administrador.`, 'error');
+        console.error('🔧 Error de backend detectado:', serverError);
+      } else {
+        const errorMessage = errorData?.message || 'Error al asignar el ticket';
+        showNotificationMessage(errorMessage, 'error');
+      }
     }
-  }, [usuariosAsignables, showNotificationMessage, manejarTokenExpirado, verificarToken, isAdmin, user]);
+  }, [usuariosAsignables, showNotificationMessage]);
 
-  // Handler para asignar usuario desde el select en la tabla
+  // Handler simplificado para asignar usuario desde la interfaz
   const asignarUsuarioTicket = useCallback(async (ticketId: number, usuarioId: number) => {
-    try {
-      console.log('🔍 DEBUG - Información del usuario actual:', { user, isAdmin });
-      console.log('🔍 DEBUG - Intentando asignar ticket:', { ticketId, usuarioId });
-      
-      // Si usuarioId es 0 o vacío, significa "Sin asignar"
-      if (!usuarioId) {
-        console.log(`🔄 Desasignando ticket ${ticketId}`);
-        showNotificationMessage('Función de desasignación no implementada aún', 'info');
-        return;
-      }
-
-      // Verificar permisos antes de hacer la llamada
-      if (!isAdmin) {
-        console.error('❌ Usuario no es administrador, no puede asignar tickets');
-        showNotificationMessage('Solo los administradores pueden asignar tickets', 'error');
-        return;
-      }
-
-      await asignarTicket(ticketId, usuarioId);
-      
-      // Actualizar estado local tras asignación exitosa
-      const usuarioAsignado = usuariosAsignables.find((u: UserType) => u.id === usuarioId);
-      
-      setTickets((prevTickets: TicketType[]) => prevTickets.map((ticket: TicketType) =>
-        ticket.id === ticketId
-          ? { ...ticket, usuario_asignado: usuarioAsignado }
-          : ticket
-      ));
-      setFilteredTickets((prevTickets: TicketType[]) => prevTickets.map((ticket: TicketType) =>
-        ticket.id === ticketId
-          ? { ...ticket, usuario_asignado: usuarioAsignado }
-          : ticket
-      ));
-    } catch (error) {
-      console.error('❌ Error en asignarUsuarioTicket:', error);
-      
-      // Capturar específicamente el error de permisos
-      if (error && typeof error === 'object' && 'response' in error) {
-        const apiError = error as { response?: { data?: { message?: string } } };
-        if (apiError.response?.data?.message === 'Solo los administradores pueden asignar tickets') {
-          showNotificationMessage('No tienes permisos para asignar tickets. Solo los administradores pueden hacerlo.', 'error');
-          return;
-        }
-      }
-      
-      showNotificationMessage('Error al asignar el ticket', 'error');
+    if (!usuarioId) {
+      showNotificationMessage('Por favor selecciona un usuario válido', 'error');
+      return;
     }
-  }, [asignarTicket, usuariosAsignables, showNotificationMessage, user, isAdmin]);
+    await asignarTicket(ticketId, usuarioId);
+  }, [asignarTicket, showNotificationMessage]);
 
+  // Función para cambiar el estado de un ticket según especificaciones
+  const cambiarEstadoTicket = useCallback(async (ticketId: number, nuevoEstado: string) => {
+    try {
+      console.log(`🔄 Cambiando estado del ticket ${ticketId} a: ${nuevoEstado}`);
+      
+      // Usar PATCH con endpoint específico para estado
+      const response = await Api.patch(`/tickets/${ticketId}/estado`, {
+        estado: nuevoEstado
+      });
+
+      if (response.data.success) {
+        console.log('✅ Estado actualizado correctamente:', response.data);
+        
+        // Actualizar el ticket en el estado local
+        setTickets(prevTickets => 
+          prevTickets.map(ticket => 
+            ticket.id === ticketId 
+              ? { ...ticket, estado: nuevoEstado, fecha_actualizacion: new Date().toISOString() }
+              : ticket
+          )
+        );
+        
+        showNotificationMessage(`Estado cambiado a "${nuevoEstado}" exitosamente`, 'success');
+      } else {
+        throw new Error(response.data.message || 'Error actualizando el ticket');
+      }
+    } catch (error: unknown) {
+      console.error('❌ Error cambiando estado:', error);
+      
+      // Manejo de errores según especificaciones
+      const apiError = error as ApiError;
+      const status = apiError?.response?.status;
+      const errorData = apiError?.response?.data;
+      
+      if (status === 401) {
+        showNotificationMessage('Sesión expirada. Iniciando sesión nuevamente.', 'error');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        navigate('/login');
+      } else if (status === 403) {
+        showNotificationMessage('Sin permisos para cambiar el estado de este ticket.', 'error');
+      } else if (status === 404) {
+        showNotificationMessage('Ticket no encontrado.', 'error');
+      } else {
+        const errorMessage = errorData?.message || 'Error al cambiar el estado del ticket';
+        showNotificationMessage(errorMessage, 'error');
+      }
+    }
+  }, [showNotificationMessage, navigate]);
+
+  // Función para filtrar tickets
   const filterTickets = useCallback(() => {
     let filtered = tickets;
 
@@ -640,7 +593,14 @@ const TicketManagement: React.FC = () => {
         // Adaptar a los campos que realmente vienen del backend
         nombre: ticket.usuario?.username || ticket.usuario?.nombre || 'Usuario',
         apellido: ticket.usuario?.email || ticket.usuario?.apellido || 'Sin email'
-      }
+      },
+      // Mapear información de asignación del backend al formato esperado por el frontend
+      usuario_asignado: (ticket as any).asignado_a ? {
+        id: (ticket as any).asignado_a,
+        nombre: (ticket as any).asignado_nombre || 'Usuario asignado',
+        apellido: '',
+        email: ''
+      } : undefined
     }));
   };
 
@@ -664,16 +624,6 @@ const TicketManagement: React.FC = () => {
     return colors[prioridad as keyof typeof colors] || '#95a5a6';
   };
 
-  const getStatusIcon = (estado: string) => {
-    const icons = {
-      abierto: <Clock size={16} />,
-      en_proceso: <AlertCircle size={16} />,
-      resuelto: <CheckCircle size={16} />,
-      cerrado: <XCircle size={16} />
-    };
-    return icons[estado as keyof typeof icons] || <Clock size={16} />;
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -682,6 +632,89 @@ const TicketManagement: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Función para obtener información sobre el filtro activo
+  const getFilterInfo = () => {
+    const tipo = searchParams.get('tipo');
+    const userData = localStorage.getItem('currentUser');
+    
+    if (!userData) return { title: 'Tickets', description: 'Cargando...' };
+    
+    const currentUser = JSON.parse(userData);
+    
+    if (currentUser.rol === 'administrador') {
+      switch (tipo) {
+        case 'alumnos':
+          return { 
+            title: '📚 Tickets de Alumnos', 
+            description: `${tickets.length} tickets encontrados` 
+          };
+        case 'personal':
+          return { 
+            title: '👥 Tickets del Personal', 
+            description: `${tickets.length} tickets encontrados` 
+          };
+        default:
+          return { 
+            title: '🌐 Todos los Tickets', 
+            description: `${tickets.length} tickets encontrados` 
+          };
+      }
+    } else if (currentUser.rol === 'personal') {
+      const tienePermisosAlumnos = currentUser.tickets_alumnos === 'S';
+      const tienePermisosPersonal = currentUser.tickets_personal === 'S';
+      
+      switch (tipo) {
+        case 'alumnos':
+          return tienePermisosAlumnos 
+            ? { 
+                title: '📚 Tickets de Alumnos', 
+                description: `${tickets.length} tickets encontrados` 
+              }
+            : { 
+                title: '🚫 Sin Permisos', 
+                description: 'Sin permisos para tickets de alumnos - Mostrando tickets propios' 
+              };
+        case 'personal':
+          return tienePermisosPersonal
+            ? { 
+                title: '👥 Tickets del Personal', 
+                description: `${tickets.length} tickets encontrados` 
+              }
+            : { 
+                title: '🚫 Sin Permisos', 
+                description: 'Sin permisos para tickets del personal - Mostrando tickets propios' 
+              };
+        default:
+          if (tienePermisosAlumnos && tienePermisosPersonal) {
+            return { 
+              title: '🔄 Filtro: Todos los Permitidos', 
+              description: `Permisos: alumnos + personal (${tickets.length} tickets)` 
+            };
+          } else if (tienePermisosAlumnos) {
+            return { 
+              title: '📚 Filtro: Solo Alumnos Permitidos', 
+              description: `Permiso: solo alumnos (${tickets.length} tickets)` 
+            };
+          } else if (tienePermisosPersonal) {
+            return { 
+              title: '👥 Filtro: Solo Personal Permitido', 
+              description: `Permiso: solo personal (${tickets.length} tickets)` 
+            };
+          } else {
+            return { 
+              title: '👤 Filtro: Solo Mis Tickets', 
+              description: `Sin permisos especiales (${tickets.length} tickets)` 
+            };
+          }
+      }
+    } else {
+      return { 
+        title: '👤 Filtro: Solo Mis Tickets', 
+        description: `Rol alumno - solo tickets propios (${tickets.length} tickets)` 
+      };
+    }
   };
 
   const navigateToChat = () => {
@@ -693,40 +726,6 @@ const TicketManagement: React.FC = () => {
     localStorage.removeItem('currentUser');
     navigate('/login');
   };
-
-  // Función para cambiar el estado de un ticket
-  const cambiarEstadoTicket = useCallback(async (ticketId: number, nuevoEstado: string) => {
-    try {
-      console.log(`🔄 Cambiando estado del ticket ${ticketId} a: ${nuevoEstado}`);
-      
-      const response = await Api.patch(`/tickets/${ticketId}/estado`, {
-        estado: nuevoEstado
-      });
-
-      if (response.data.success) {
-        console.log('✅ Estado actualizado correctamente:', response.data);
-        
-        // Actualizar el ticket en el estado local
-        setTickets(prevTickets => 
-          prevTickets.map(ticket => 
-            ticket.id === ticketId 
-              ? { ...ticket, estado: nuevoEstado, fecha_actualizacion: new Date().toISOString() }
-              : ticket
-          )
-        );
-        
-        showNotificationMessage(`Estado cambiado a "${nuevoEstado}" exitosamente`, 'success');
-      } else {
-        throw new Error(response.data.message || 'Error actualizando el ticket');
-      }
-    } catch (error: unknown) {
-      console.error('❌ Error cambiando estado:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      showNotificationMessage(`Error: ${errorMessage}`, 'error');
-    }
-  }, [showNotificationMessage]);
-
-
 
   const stats = {
     total: tickets.length,
