@@ -1170,8 +1170,7 @@ const Chat: React.FC = () => {
                         <div style={{ padding: '16px' }}>
                           {[
                             { key: 'users', icon: Users, label: 'Gestión de Usuarios' },
-                            { key: 'settings', icon: Settings, label: 'Gestión de Documentos' },
-                            { key: 'others', icon: FileText, label: 'Otros' }
+                            { key: 'settings', icon: Settings, label: 'Gestión de Documentos' }
                           ].map(({ key, icon: Icon, label }) => (
                             <button
                               key={key}
@@ -1252,7 +1251,7 @@ const Chat: React.FC = () => {
                         <div style={{
                           padding: '20px',
                           borderBottom: '1px solid #ecf0f1',
-                          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                          background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
                           color: '#ffffff'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1284,7 +1283,7 @@ const Chat: React.FC = () => {
                               onClick={() => handleTicketNav('todos')}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#f8f9fa';
-                                e.currentTarget.style.color = '#3b82f6';
+                                e.currentTarget.style.color = '#10b981';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = 'none';
@@ -1354,7 +1353,7 @@ const Chat: React.FC = () => {
                               onClick={() => handleTicketNav('personal')}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#f8f9fa';
-                                e.currentTarget.style.color = '#8b5cf6';
+                                e.currentTarget.style.color = '#10b981';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = 'none';
@@ -1695,7 +1694,8 @@ const Chat: React.FC = () => {
                       fontSize: isMobile ? '14px' : '15px',
                       lineHeight: '1.6',
                       wordBreak: 'break-word',
-                      color: '#1f2937'
+                      color: '#1f2937',
+                      whiteSpace: 'pre-wrap'
                     }}>
                       {msg.contenido}
                     </div>

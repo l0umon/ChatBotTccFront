@@ -684,8 +684,8 @@ const TicketManagement: React.FC = () => {
     });
   };
 
-  const navigateToDashboard = () => {
-    navigate('/admin/dashboard');
+  const navigateToChat = () => {
+    navigate('/chat');
   };
 
   const logout = () => {
@@ -815,7 +815,7 @@ const TicketManagement: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <button
-              onClick={navigateToDashboard}
+              onClick={navigateToChat}
               style={{
                 background: 'none',
                 border: 'none',
@@ -832,7 +832,7 @@ const TicketManagement: React.FC = () => {
               }}
             >
               <ArrowLeft size={20} />
-              {!isMobile && 'Volver al Dashboard'}
+              {!isMobile && 'Volver al Chat'}
             </button>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

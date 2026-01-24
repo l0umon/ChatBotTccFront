@@ -32,6 +32,8 @@ interface User {
   rol: string;
   activo: boolean;
   fecha_creacion?: string;
+  tickets_alumnos?: string;
+  tickets_personal?: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -44,6 +46,7 @@ const UserManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const [notification, setNotification] = useState<{
     show: boolean;
     message: string;
@@ -74,7 +77,7 @@ const UserManagement: React.FC = () => {
       if (response.data.success && response.data.data) {
         console.log('Setting users:', response.data.data);
         setUsers(response.data.data);
-        showNotification(`Se cargaron ${response.data.data.length} usuarios correctamente`, 'success');
+        // showNotification(`Se cargaron ${response.data.data.length} usuarios correctamente`, 'success');
       } else {
         console.error('Error en la respuesta:', response.data);
         showNotification('Error al cargar usuarios', 'error');
@@ -97,6 +100,19 @@ const UserManagement: React.FC = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Obtener rol del usuario actual
+  useEffect(() => {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      try {
+        const user = JSON.parse(currentUser);
+        setCurrentUserRole(user.rol || '');
+      } catch (error) {
+        console.error('Error parsing current user:', error);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -144,7 +160,11 @@ const UserManagement: React.FC = () => {
   }, [users, searchTerm, activeFilter]);
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user);
+    setEditingUser({
+      ...user,
+      tickets_alumnos: user.tickets_alumnos || 'N',
+      tickets_personal: user.tickets_personal || 'N'
+    });
     setShowEditModal(true);
   };
 
@@ -897,6 +917,7 @@ const UserManagement: React.FC = () => {
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
           }}>
             <div style={{ 
+              background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
               padding: '25px 30px', 
               borderBottom: '1px solid #ecf0f1',
               display: 'flex',
@@ -904,11 +925,11 @@ const UserManagement: React.FC = () => {
               alignItems: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Users size={20} color="#047857" />
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Lista de Usuarios</h3>
+                <Users size={20} color="#ffffff" />
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#ffffff' }}>Lista de Usuarios</h3>
               </div>
               <span style={{ 
-                color: '#7f8c8d', 
+                color: '#ffffff', 
                 fontSize: '14px',
                 fontWeight: '500'
               }}>
@@ -1331,14 +1352,15 @@ const UserManagement: React.FC = () => {
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
           }}>
             <div style={{
+              background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
               padding: isMobile ? '20px' : '25px 30px',
               borderBottom: '1px solid #ecf0f1',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h3 style={{ margin: 0, fontSize: isMobile ? '16px' : '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Edit size={isMobile ? 18 : 20} color="#047857" />
+              <h3 style={{ margin: 0, fontSize: isMobile ? '16px' : '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', color: '#ffffff' }}>
+                <Edit size={isMobile ? 18 : 20} color="#ffffff" />
                 Editar Usuario
               </h3>
               <button
@@ -1346,19 +1368,19 @@ const UserManagement: React.FC = () => {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#7f8c8d',
+                  color: '#ffffff',
                   cursor: 'pointer',
                   padding: '8px',
                   borderRadius: '8px',
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f8f9fa';
-                  e.currentTarget.style.color = '#1f2937';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.color = '#ffffff';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = '#7f8c8d';
+                  e.currentTarget.style.color = '#ffffff';
                 }}
               >
                 <X size={20} />
@@ -1465,7 +1487,19 @@ const UserManagement: React.FC = () => {
                   </label>
                   <select
                     value={editingUser.rol}
-                    onChange={(e) => setEditingUser({...editingUser, rol: e.target.value})}
+                    onChange={(e) => {
+                      const newRole = e.target.value;
+                      if (newRole === 'alumno') {
+                        setEditingUser({
+                          ...editingUser, 
+                          rol: newRole,
+                          tickets_alumnos: 'N',
+                          tickets_personal: 'N'
+                        });
+                      } else {
+                        setEditingUser({...editingUser, rol: newRole});
+                      }
+                    }}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -1553,6 +1587,188 @@ const UserManagement: React.FC = () => {
                   }}
                 />
               </div>
+
+              {/* Permisos de Tickets - Solo para administradores y cuando el rol no sea alumno */}
+              {currentUserRole === 'administrador' && editingUser && editingUser.rol !== 'alumno' && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                  border: '2px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                        <path d="M2 17L12 22L22 17"/>
+                        <path d="M2 12L12 17L22 12"/>
+                      </svg>
+                    </div>
+                    <h3 style={{
+                      margin: '0',
+                      fontSize: '1.1rem',
+                      fontWeight: '700',
+                      color: '#065f46'
+                    }}>
+                      Permisos de Gestión de Tickets
+                    </h3>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                    gap: '1rem'
+                  }}>
+                    {/* Tickets Alumnos */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.75rem',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.9rem'
+                      }}>
+                        Gestionar Tickets de Alumnos
+                      </label>
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.5rem'
+                      }}>
+                        {['S', 'N'].map((option) => (
+                          <label
+                            key={option}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              cursor: 'pointer',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '8px',
+                              border: `2px solid ${editingUser.tickets_alumnos === option ? '#10b981' : '#e5e7eb'}`,
+                              background: editingUser.tickets_alumnos === option ? 'rgba(16, 185, 129, 0.1)' : 'white',
+                              transition: 'all 0.2s',
+                              fontSize: '0.85rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="tickets_alumnos"
+                              value={option}
+                              checked={editingUser.tickets_alumnos === option}
+                              onChange={(e) => setEditingUser({...editingUser, tickets_alumnos: e.target.value})}
+                              style={{ display: 'none' }}
+                            />
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              border: `2px solid ${editingUser.tickets_alumnos === option ? '#10b981' : '#d1d5db'}`,
+                              background: editingUser.tickets_alumnos === option ? '#10b981' : 'transparent',
+                              position: 'relative'
+                            }}>
+                              {editingUser.tickets_alumnos === option && (
+                                <div style={{
+                                  width: '4px',
+                                  height: '4px',
+                                  borderRadius: '50%',
+                                  background: 'white',
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%)'
+                                }} />
+                              )}
+                            </div>
+                            {option === 'S' ? 'Sí' : 'No'}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tickets Personal */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.75rem',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.9rem'
+                      }}>
+                        Gestionar Tickets de Personal
+                      </label>
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.5rem'
+                      }}>
+                        {['S', 'N'].map((option) => (
+                          <label
+                            key={option}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              cursor: 'pointer',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '8px',
+                              border: `2px solid ${editingUser.tickets_personal === option ? '#10b981' : '#e5e7eb'}`,
+                              background: editingUser.tickets_personal === option ? 'rgba(16, 185, 129, 0.1)' : 'white',
+                              transition: 'all 0.2s',
+                              fontSize: '0.85rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="tickets_personal"
+                              value={option}
+                              checked={editingUser.tickets_personal === option}
+                              onChange={(e) => setEditingUser({...editingUser, tickets_personal: e.target.value})}
+                              style={{ display: 'none' }}
+                            />
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              border: `2px solid ${editingUser.tickets_personal === option ? '#10b981' : '#d1d5db'}`,
+                              background: editingUser.tickets_personal === option ? '#10b981' : 'transparent',
+                              position: 'relative'
+                            }}>
+                              {editingUser.tickets_personal === option && (
+                                <div style={{
+                                  width: '4px',
+                                  height: '4px',
+                                  borderRadius: '50%',
+                                  background: 'white',
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%)'
+                                }} />
+                              )}
+                            </div>
+                            {option === 'S' ? 'Sí' : 'No'}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button

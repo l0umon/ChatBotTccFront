@@ -6,10 +6,11 @@ import {
   Shield,
   ArrowRight,
   GraduationCap,
-  Eye,
+  Download,
   Edit2,
   Trash2
-} from 'lucide-react';interface Documento {
+} from 'lucide-react';
+import Api from './Api';interface Documento {
 	id: number;
 	titulo: string;
 	descripcion: string;
@@ -188,6 +189,54 @@ const DocumentManagement: React.FC = () => {
 	}, [showUploadForm]);
 
 	const isMobile = window.innerWidth <= 768;
+
+	// Función para descargar documento (igual que en Chat.tsx)
+	const descargarDocumento = async (documentoId: number, nombreArchivo: string, fuenteOriginal?: string) => {
+		try {
+			console.log(`📥 Descargando documento ${documentoId}...`);
+			
+			// Probar diferentes endpoints posibles
+			let response;
+			const endpoints = [
+				`/documents/${documentoId}/download`,
+				`/documents/download/${documentoId}`,
+				`/documentos/${documentoId}/download`,
+				`/documentos/download/${documentoId}`
+			];
+			
+			for (const endpoint of endpoints) {
+				try {
+					response = await Api.get(endpoint, { responseType: 'blob' });
+					console.log(`✅ Endpoint funcionando: ${endpoint}`);
+					break;
+				} catch (endpointError) {
+					console.log(`❌ Endpoint ${endpoint} no funciona, probando siguiente...`);
+					continue;
+				}
+			}
+			
+			if (!response) {
+				throw new Error('No se encontró un endpoint válido para la descarga');
+			}
+
+			const blob = response.data;
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = nombreArchivo || `documento_${documentoId}.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			window.URL.revokeObjectURL(url);
+			
+			console.log(`✅ Descarga completada: ${nombreArchivo}`);
+			showNotification(`Documento "${nombreArchivo}" descargado exitosamente`, 'success');
+			
+		} catch (error) {
+			console.error('❌ Error descargando:', error);
+			showNotification(`Error al descargar el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`, 'error');
+		}
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -1180,7 +1229,7 @@ const DocumentManagement: React.FC = () => {
 							color: '#ffffff',
 							padding: '16px 24px',
 							display: 'grid',
-							gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr 120px',
+							gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr 260px',
 							gap: '16px',
 							alignItems: 'center',
 							fontWeight: '600',
@@ -1213,7 +1262,7 @@ const DocumentManagement: React.FC = () => {
 						</div>
 
 						{/* Contenido de la tabla */}
-						<div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+						<div>
 							{filteredDocs.length === 0 ? (
 								<div style={{
 									padding: '60px 24px',
@@ -1236,7 +1285,7 @@ const DocumentManagement: React.FC = () => {
 											padding: '20px 24px',
 											borderBottom: index < filteredDocs.length - 1 ? '1px solid #f3f4f6' : 'none',
 											display: 'grid',
-											gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr 120px',
+											gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr 260px',
 											gap: '16px',
 											alignItems: 'center',
 											transition: 'background-color 0.3s ease',
@@ -1358,11 +1407,11 @@ const DocumentManagement: React.FC = () => {
 													alignItems: 'center',
 													justifyContent: isMobile ? 'center' : 'flex-start'
 												}}>
-													{/* Botón Ver */}
+													{/* Botón Descargar */}
 													<button
-														onClick={() => handleVerDocumento(doc)}
+														onClick={() => descargarDocumento(doc.id, doc.fileName)}
 														style={{
-															background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+															background: 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
 															border: 'none',
 															color: '#ffffff',
 															borderRadius: '6px',
@@ -1374,25 +1423,25 @@ const DocumentManagement: React.FC = () => {
 															transition: 'all 0.3s ease',
 															fontSize: isMobile ? '10px' : '12px',
 															fontWeight: '600',
-															boxShadow: '0 1px 4px rgba(6, 182, 212, 0.3)',
+															boxShadow: '0 1px 4px rgba(16, 185, 129, 0.3)',
 															minWidth: isMobile ? '60px' : '80px',
 															height: isMobile ? '32px' : '36px',
 															justifyContent: 'center'
 														}}
 														onMouseEnter={(e) => {
-															e.currentTarget.style.background = 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)';
+															e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #10b981 100%)';
 															e.currentTarget.style.transform = 'translateY(-1px)';
-															e.currentTarget.style.boxShadow = '0 2px 8px rgba(6, 182, 212, 0.4)';
+															e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.4)';
 														}}
 														onMouseLeave={(e) => {
-															e.currentTarget.style.background = 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)';
+															e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #065f46 100%)';
 															e.currentTarget.style.transform = 'translateY(0)';
-															e.currentTarget.style.boxShadow = '0 1px 4px rgba(6, 182, 212, 0.3)';
+															e.currentTarget.style.boxShadow = '0 1px 4px rgba(16, 185, 129, 0.3)';
 														}}
-														title="Ver documento"
+														title="Descargar documento"
 													>
-														<Eye size={12} />
-														{!isMobile && 'Ver'}
+														<Download size={12} />
+														{!isMobile && 'Descargar'}
 													</button>
 
 													{/* Botón Editar */}
